@@ -13,6 +13,10 @@ dist
 node_modules
 types
 deployments
+!deployments/
+deployments/*
+!deployments/sepolia/
+!deployments/sepolia/**
 tmp
 
 # files

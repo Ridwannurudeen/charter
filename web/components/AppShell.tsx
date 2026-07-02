@@ -2,22 +2,42 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { useWallet } from "@/lib/wallet";
 import { SEPOLIA_CHAIN_ID } from "@/lib/contracts";
 
+import { DeploymentBanner } from "./DeploymentBanner";
 import { Badge, Button, shortAddress } from "./ui";
 
 const TABS = [
   { href: "/issuer", label: "Issuer Console" },
   { href: "/investor", label: "Investor Portal" },
   { href: "/governance", label: "Governance" },
+  { href: "/auditor", label: "Auditor" },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { address, chainId, connecting, connect, isAdmin, isAgent } = useWallet();
   const wrongChain = address !== null && chainId !== SEPOLIA_CHAIN_ID;
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+
+  useEffect(() => {
+    if (copyState === "idle") return;
+    const timeout = window.setTimeout(() => setCopyState("idle"), 1200);
+    return () => window.clearTimeout(timeout);
+  }, [copyState]);
+
+  const copyAddress = async () => {
+    if (!address) return;
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopyState("copied");
+    } catch {
+      setCopyState("failed");
+    }
+  };
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -46,13 +66,45 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               })}
             </nav>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             {address && (isAdmin || isAgent) && <Badge tone="primary">{isAdmin ? "Admin" : "Agent"}</Badge>}
             {wrongChain && <Badge tone="danger">Wrong network</Badge>}
             {address ? (
-              <span className="rounded-lg border border-line bg-raised px-3 py-2 font-mono text-sm text-foreground">
-                {shortAddress(address)}
-              </span>
+              <div className="flex min-w-0 items-center rounded-lg border border-line bg-raised">
+                <span className="truncate px-3 py-2 font-mono text-sm text-foreground">{shortAddress(address)}</span>
+                <button
+                  type="button"
+                  onClick={copyAddress}
+                  className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center border-l border-line text-muted transition-colors duration-150 hover:text-primary-bright focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  aria-label="Copy connected wallet address"
+                  title={copyState === "copied" ? "Copied" : copyState === "failed" ? "Copy failed" : "Copy address"}
+                >
+                  {copyState === "copied" ? (
+                    <svg
+                      className="h-4 w-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden="true"
+                    >
+                      <path d="m20 6-11 11-5-5" />
+                    </svg>
+                  ) : (
+                    <svg
+                      className="h-4 w-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden="true"
+                    >
+                      <rect x="9" y="9" width="11" height="11" rx="2" />
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             ) : (
               <Button onClick={connect} disabled={connecting}>
                 Connect wallet
@@ -81,7 +133,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
       </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">{children}</main>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
+        <DeploymentBanner />
+        {children}
+      </main>
       <footer className="border-t border-line py-6">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 text-xs text-faint sm:px-6">
           <span>Charter — confidential equity on Ethereum Sepolia</span>

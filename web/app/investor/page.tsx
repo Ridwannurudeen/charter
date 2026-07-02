@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AppShell, ConnectGate } from "@/components/AppShell";
 import { EncryptedValue } from "@/components/EncryptedValue";
 import { Badge, Button, Callout, Card, Field, Input, formatUnits6, shortAddress } from "@/components/ui";
-import { ADDRESSES } from "@/lib/contracts";
+import { ADDRESSES, CONTRACTS_CONFIGURED } from "@/lib/contracts";
 import { encryptU64 } from "@/lib/fhevm";
 import { useWallet } from "@/lib/wallet";
 
@@ -26,11 +26,17 @@ function InvestorPortal() {
   const [usdHandle, setUsdHandle] = useState<string | null>(null);
   const [delegatee, setDelegatee] = useState<string | null>(null);
   const [observer, setObserver] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
+    if (!CONTRACTS_CONFIGURED) {
+      setLoading(false);
+      return;
+    }
     if (!shares || !mcUSD || !address) return;
+    setLoading(true);
     try {
       const [sh, uh, del, obs] = await Promise.all([
         shares.confidentialBalanceOf(address),
@@ -44,6 +50,8 @@ function InvestorPortal() {
       setObserver(obs);
     } catch {
       setError("Could not load registry state — are the contract addresses configured?");
+    } finally {
+      setLoading(false);
     }
   }, [shares, mcUSD, address]);
 
@@ -87,12 +95,16 @@ function InvestorPortal() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card title="My shareholding" subtitle="Charter Demo Corp common shares (CDC-S)">
-          <EncryptedValue
-            handle={shareHandle}
-            contractAddress={ADDRESSES.shares}
-            suffix="shares"
-            label="Decrypt my stake"
-          />
+          {loading ? (
+            <div className="skeleton h-8 w-56 rounded-md" />
+          ) : (
+            <EncryptedValue
+              handle={shareHandle}
+              contractAddress={ADDRESSES.shares}
+              suffix="shares"
+              label="Decrypt my stake"
+            />
+          )}
           <div className="mt-5 flex items-center gap-3 border-t border-line pt-4">
             {votingActive ? (
               <>
@@ -117,13 +129,17 @@ function InvestorPortal() {
         </Card>
 
         <Card title="My distributions" subtitle="Confidential USD received from dividend waterfalls">
-          <EncryptedValue
-            handle={usdHandle}
-            contractAddress={ADDRESSES.mcUSD}
-            format={formatUnits6}
-            suffix="mcUSD"
-            label="Decrypt my payouts"
-          />
+          {loading ? (
+            <div className="skeleton h-8 w-56 rounded-md" />
+          ) : (
+            <EncryptedValue
+              handle={usdHandle}
+              contractAddress={ADDRESSES.mcUSD}
+              format={formatUnits6}
+              suffix="mcUSD"
+              label="Decrypt my payouts"
+            />
+          )}
         </Card>
 
         <Card

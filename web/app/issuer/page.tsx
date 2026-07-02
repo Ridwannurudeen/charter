@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { AppShell, ConnectGate } from "@/components/AppShell";
 import { Badge, Button, Callout, Card, Field, Input, Stat, formatUnits6 } from "@/components/ui";
-import { ADDRESSES } from "@/lib/contracts";
+import { ADDRESSES, CONTRACTS_CONFIGURED } from "@/lib/contracts";
 import { encryptU64, publicDecrypt } from "@/lib/fhevm";
 import { useWallet } from "@/lib/wallet";
 
@@ -30,11 +30,17 @@ function IssuerConsole() {
   const [paused, setPaused] = useState(false);
   const [totalOnRecord, setTotalOnRecord] = useState<bigint>(0n);
   const [distributions, setDistributions] = useState<DistributionRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
+    if (!CONTRACTS_CONFIGURED) {
+      setLoading(false);
+      return;
+    }
     if (!shares || !distributor) return;
+    setLoading(true);
     try {
       const [p, total, count] = await Promise.all([
         shares.paused(),
@@ -51,6 +57,8 @@ function IssuerConsole() {
       setDistributions(rows.reverse());
     } catch {
       setError("Could not load registry state — are the contract addresses configured?");
+    } finally {
+      setLoading(false);
     }
   }, [shares, distributor]);
 
@@ -96,9 +104,11 @@ function IssuerConsole() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Issuer console</h1>
-          <p className="mt-1 text-sm text-muted">Charter Demo Corp — confidential share registry management.</p>
+          <p className="mt-1 text-sm text-muted">
+            Allocations are encrypted in your browser; the chain computes on ciphertext.
+          </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Stat
             label="Shares on record"
             value={totalOnRecord > 0n ? totalOnRecord.toLocaleString("en-US") : "not disclosed"}
@@ -282,12 +292,18 @@ function IssuerConsole() {
           title="Distribution history"
           subtitle="Pool totals are public by design; the payouts inside them are not."
         >
-          {distributions.length === 0 ? (
+          {loading ? (
+            <div className="flex flex-col gap-3">
+              <div className="skeleton h-9 rounded-md" />
+              <div className="skeleton h-9 rounded-md" />
+              <div className="skeleton h-9 rounded-md" />
+            </div>
+          ) : distributions.length === 0 ? (
             <p className="text-sm text-faint">No distributions yet.</p>
           ) : (
             <ul className="flex flex-col divide-y divide-line">
               {distributions.map((d) => (
-                <li key={d.id} className="flex items-center justify-between gap-3 py-3 text-sm">
+                <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
                   <span className="font-mono text-muted">#{d.id}</span>
                   <span className="font-mono tabular">{formatUnits6(d.pool)} mcUSD</span>
                   <span className="text-muted">over {d.totalShares.toLocaleString("en-US")} shares</span>

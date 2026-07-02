@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { AppShell, ConnectGate } from "@/components/AppShell";
 import { Badge, Button, Callout, Card, Field, Input } from "@/components/ui";
-import { ADDRESSES } from "@/lib/contracts";
+import { ADDRESSES, CONTRACTS_CONFIGURED } from "@/lib/contracts";
 import { encryptBool, publicDecrypt } from "@/lib/fhevm";
 import { useWallet } from "@/lib/wallet";
 
@@ -39,13 +39,19 @@ function Governance() {
   const [rows, setRows] = useState<ResolutionRow[]>([]);
   const [clock, setClock] = useState(0);
   const [votingActive, setVotingActive] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [period, setPeriod] = useState("300");
 
   const refresh = useCallback(async () => {
+    if (!CONTRACTS_CONFIGURED) {
+      setLoading(false);
+      return;
+    }
     if (!resolutions || !shares || !address) return;
+    setLoading(true);
     try {
       const [count, currentClock, delegatee] = await Promise.all([
         resolutions.resolutionCount(),
@@ -75,6 +81,8 @@ function Governance() {
       setRows(list.reverse());
     } catch {
       setError("Could not load resolutions — are the contract addresses configured?");
+    } finally {
+      setLoading(false);
     }
   }, [resolutions, shares, address]);
 
@@ -164,7 +172,15 @@ function Governance() {
         </Card>
       )}
 
-      {rows.length === 0 ? (
+      {loading ? (
+        <Card>
+          <div className="flex flex-col gap-3">
+            <div className="skeleton h-24 rounded-md" />
+            <div className="skeleton h-24 rounded-md" />
+            <div className="skeleton h-24 rounded-md" />
+          </div>
+        </Card>
+      ) : rows.length === 0 ? (
         <Card>
           <p className="py-8 text-center text-sm text-faint">No resolutions yet.</p>
         </Card>
