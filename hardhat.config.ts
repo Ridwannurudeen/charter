@@ -26,6 +26,9 @@ const config: HardhatUserConfig = {
       sepolia: vars.get("ETHERSCAN_API_KEY", ""),
     },
   },
+  sourcify: {
+    enabled: true,
+  },
   gasReporter: {
     currency: "USD",
     enabled: process.env.REPORT_GAS ? true : false,
