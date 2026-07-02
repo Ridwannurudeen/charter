@@ -7,7 +7,7 @@ ordered execution scope — work it top to bottom, nothing skipped, nothing adde
 ## Hard rules
 
 1. **Branch discipline.** Never commit to `master` — a pre-commit hook blocks it. Work on `feat/*` branches (current: `feat/charter-core`). One focused commit per unit of work.
-2. **Verify before you code.** Every SDK/library claim in `CODEX-PLAN.md` was verified against installed sources. If you need an API not listed there, read it from `node_modules` first — do not trust training data. The FHEVM/relayer-sdk APIs changed heavily in 2026.
+2. **Verify before you code.** Every SDK/library claim in `HANDOFF.md` was verified against installed sources. If you need an API not listed there, read it from `node_modules` first — do not trust training data. The FHEVM/relayer-sdk APIs changed heavily in 2026.
 3. **Tests are the gate.** `npx hardhat test` must stay 20/20 green. Frontend: `npm run build` in `web/` must pass. Run both before every commit that touches the respective area.
 4. **Do not modify the contracts** (`contracts/*.sol`) or tests without flagging it as a question first — they are final, audited-pattern code, and the Sepolia deployment will match them.
 5. **No secrets in code.** A hook blocks `0x`+64-hex literals (pattern-matches private keys). For the zero handle use `("0x" + "0".repeat(64))`. Deployer mnemonic lives in hardhat vars, never in files.
