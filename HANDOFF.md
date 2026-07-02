@@ -25,7 +25,7 @@ Judged on: working Sepolia demo, frontend quality/UX, docs, video, X thread. We 
   Webpack's "Circular dependency between chunks" warning is benign — ignore.
 - tsconfig target is ES2020 (BigInt literals). React 19's `react-hooks/set-state-in-effect` rule
   is scoped-disabled on the three fetch-on-mount effects — copy that exact pattern for new pages.
-- Sepolia is NOT deployed yet (reviewer owns deployment; burner awaits funding). All frontend
+- Sepolia is NOT deployed yet — **you deploy it in §7** once §1-§3 are done. All frontend
   work must run address-agnostic off `NEXT_PUBLIC_*` env (see `web/lib/contracts.ts`); with zero
   addresses the pages show their error callouts — that's expected until deploy.
 - Environment: Windows + Git Bash. A **formatter hook rewrites files on save** (if an edit fails
@@ -115,8 +115,8 @@ with zero addresses (error callout, no crash); no new deps.
    Fail loudly (nonzero exit, clear message) if any artifact is missing. Add npm script
    `"export:addresses": "ts-node scripts/export-addresses.ts"` to the ROOT package.json.
    Note: `web/.env.local` is gitignored (`web/.gitignore`) — correct; never commit it.
-2. Do NOT run deployments yourself. Reviewer runs: fund → `npm run deploy:sepolia` →
-   `npm run export:addresses` → web rebuild.
+2. Deployment itself happens later, in §7 — build and test this script first so deploy day is
+   `npm run deploy:sepolia` → `npm run export:addresses` → web rebuild.
 
 Acceptance: script runs against a fake `deployments/sepolia/` fixture you create temporarily and
 delete before committing (verify both success and missing-artifact paths by hand; no test files).
@@ -216,8 +216,8 @@ Root README structure (institutional tone, zero hype in technical sections):
    `ERC7984Rwa` + `ERC7984Votes` + `ERC7984ObserverAccess`; what we wrote on top vs inherited.
 7. **Getting started:** clone → `npm i` → `npx hardhat test` (20 tests) → `cd web && npm i &&
    npm run dev`. Scenario tasks table (from §3).
-8. **Deployed contracts (Sepolia):** markdown table with `_(pending deployment)_` placeholders
-   the reviewer fills: contract / address / Etherscan link.
+8. **Deployed contracts (Sepolia):** markdown table — contract / address / Etherscan link —
+   which YOU fill after the §7 deployment (placeholders until then).
 9. **Ecosystem positioning:** ERC-7984-native → composes with Zama's confidential-token rails;
    TokenOps-adjacent (registry layer below distribution tooling, not a competitor). 3-4 sentences.
 10. **Program footer:** built for Zama Developer Program Season 3 (Builder Track), link
@@ -245,19 +245,64 @@ writing), no placeholder text except the addresses table, renders clean on GitHu
    hashtag spam beyond the required one, no rocket-ship hype tone.
 3. `docs/LAUNCH-CHECKLIST.md` (per §4.6).
 
-## 7. Final gate before you declare done
+## 7. Sepolia deployment + live end-to-end (NOW IN YOUR SCOPE)
+
+Do this AFTER §1-§3 are done and green (you need `scripts/export-addresses.ts` and the scenario
+tasks). The deployer is `hardhat vars` MNEMONIC account index 0 =
+`0x04045Ca68BEF611adBD76e58C028cEFf4a3d640D`, funded by the user (~0.5 ETH total). RPC is the
+`SEPOLIA_RPC_URL` var (public node, already set). **The mnemonic stays in hardhat vars — never
+print it, never write it to a file.**
+
+**Measured budget (from a local deploy):** contracts+wiring = **9.26M gas** (CharterShares 4.4M,
+mcUSD 1.9M, distributor 1.2M, resolutions 1.6M, 3 wiring txs ~145k). The live scenario roughly
+doubles the total. Sepolia gas swings 2-100+ gwei.
+
+Procedure, in order:
+1. **Gas check first:** read `eth_gasPrice`. If > 20 gwei, wait and re-check every ~10 min —
+   do NOT deploy into a spike. Under ~15 gwei is fine (deploy ≈ 0.14 ETH); under 10 is ideal.
+   Also confirm deployer balance ≥ 0.4 ETH before starting (user is topping up to ~0.5).
+2. **Deploy:** `npm run deploy:sepolia` (hardhat-deploy; idempotent — reruns skip deployed
+   contracts). If a tx stalls: diagnose (nonce, gas) before ANY retry. **Never blind-resend a
+   pending tx — one clean tx per action.** Record all addresses + tx hashes.
+3. **Verify sources:** `npx hardhat verify --network sepolia <address> <constructor args…>` for
+   each contract (Sourcify is enabled in the config = keyless; Etherscan runs too if the user has
+   set ETHERSCAN_API_KEY — check `npx hardhat vars list`, don't fail the step if absent).
+   Constructor args: CharterShares = `"Charter Demo Corp" "CDC-S" "" <deployerAddress>`;
+   DividendDistributor & CharterResolutions = `<sharesAddress>`; MockConfidentialUSD = none.
+4. **Wire the frontend:** `npm run export:addresses` → confirm `web/.env.local` → `cd web &&
+   npm run build` → verify the built pages read real addresses (banner from §4.1 disappears).
+5. **Fund demo investors:** send 0.03 ETH each from the deployer to mnemonic accounts index 1
+   and 2 (they're derived from the same MNEMONIC — hardhat config exposes 10). ONE transfer
+   each, no repeats.
+6. **Live e2e (use your scenario tasks; record every tx hash in `docs/E2E-RUN.md`):**
+   issue 500000 to acct1, 300000 to acct2 → `scenario:disclose` (expect 800000) →
+   delegate acct1+acct2 (add a `scenario:delegate --signer N` task if needed) →
+   `scenario:fund 10000` → `scenario:declare 10000` → `scenario:pay` both →
+   `scenario:propose` → vote from acct1 (for) + acct2 (against) → wait out the voting window
+   (use a short `--blocks 40` period ≈ 8 min on Sepolia) → `scenario:settle` (expect passed,
+   500000 vs 300000). Decryption calls go through the real relayer — expect seconds of latency,
+   retry once on transient relayer errors (read errors ≠ value sends; retrying reads is fine).
+7. **Fill the README addresses table** (§5.8) + Etherscan/Sourcify links, commit.
+
+If anything in the FHE flows behaves differently on the real relayer than the mock (e.g.
+publicDecrypt shape), STOP, document exactly what you observed in `docs/E2E-RUN.md`, and leave it
+for review — do not improvise contract-side workarounds.
+
+## 8. Final gate before you declare done
 
 Run and paste results into the final commit message body:
 - `npx hardhat test` → 20 passing
-- `npx hardhat --help | grep scenario` → 9 tasks
+- `npx hardhat --help | grep scenario` → all scenario tasks listed
 - `cd web && npx tsc --noEmit && npx eslint .` → clean
 - `cd web && npm run build` → exit 0, `out/` contains `index.html` for all 5 routes (`/`,
   `/issuer`, `/investor`, `/governance`, `/auditor`)
+- `deployments/sepolia/` committed; `docs/E2E-RUN.md` lists every lifecycle tx hash
+- README addresses table filled with live Sepolia addresses
 - `git log --oneline master..HEAD` — every commit message describes real, reviewable work
 
 ## Out of scope — do NOT touch
 - `contracts/*.sol`, `test/Charter.ts`, `deploy/deploy.ts` (frozen; flag questions instead)
-- Actual Sepolia deployment, Etherscan verification, VPS/nginx (reviewer-owned)
+- VPS/nginx deployment of the site (reviewer-owned)
 - Recording video, posting the thread, submitting (user-owned, approval-gated)
 - No new frontend dependencies without flagging first; no UI framework/library additions
 - `web/CLAUDE.md`, `web/AGENTS.md` (scaffold notices — leave as-is)

@@ -17,7 +17,7 @@ ordered execution scope — work it top to bottom, nothing skipped, nothing adde
 ## Layout
 
 - `contracts/` — 4 Solidity contracts (done, frozen). `test/Charter.ts` — 20 tests (done).
-- `deploy/deploy.ts` — hardhat-deploy script (done). Deploy is owned by the reviewer, not you.
+- `deploy/deploy.ts` — hardhat-deploy script (done, frozen). You RUN the Sepolia deployment per HANDOFF §7 (funded deployer in hardhat vars) — but never edit the script itself.
 - `web/` — Next.js 16 App Router + Tailwind v4, **static export** (`output: 'export'`). Your main workspace.
   - `web/lib/contracts.ts` — addresses (NEXT_PUBLIC_* env) + human-readable ABIs (verified against contracts).
   - `web/lib/fhevm.ts` — relayer-sdk singleton: encrypt inputs, EIP-712 userDecrypt, publicDecrypt. Client-only (WASM) — keep all SDK imports dynamic.
