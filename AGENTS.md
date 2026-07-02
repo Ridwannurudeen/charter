@@ -1,7 +1,8 @@
 # Charter — Agent Working Conventions
 
 Confidential cap-table dApp for the **Zama Developer Program Season 3 Builder Track**.
-Deadline: **July 7, 2026, 23:59 AoE**. Target: 1st place. Read `CODEX-PLAN.md` for the work plan.
+Deadline: **July 7, 2026, 23:59 AoE**. Target: 1st place. Read `HANDOFF.md` for the full,
+ordered execution scope — work it top to bottom, nothing skipped, nothing added.
 
 ## Hard rules
 
