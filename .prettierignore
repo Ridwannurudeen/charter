@@ -10,16 +10,22 @@ build
 cache
 coverage
 dist
+contracts/**/*.sol
 node_modules
 types
+web/.next
+web/out
 
 # files
 *.env
 *.log
 .DS_Store
 .pnp.*
+AGENTS.md
 bun.lockb
 coverage.json
+HANDOFF.md
 package-lock.json
 pnpm-lock.yaml
+web/AGENTS.md
 yarn.lock
