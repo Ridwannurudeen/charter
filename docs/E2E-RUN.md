@@ -30,10 +30,10 @@ No mnemonic, private key, RPC URL, or API token was printed or written during th
 
 ## Verification
 
-| Target    | Result                                                                             |
-| --------- | ---------------------------------------------------------------------------------- |
-| Etherscan | Verified all five redeployed contracts on 2026-07-03.                              |
-| Sourcify  | Not completed; Etherscan source verification is the published verification target. |
+| Target    | Result                                                                                          |
+| --------- | ----------------------------------------------------------------------------------------------- |
+| Sourcify  | All five redeployed contracts verified on 2026-07-03 (partial match, keyless `hardhat verify`). |
+| Etherscan | Source verification pending an API key; address pages show deployed bytecode and tx history.    |
 
 ## Frontend Wiring
 
@@ -77,3 +77,18 @@ Initial `scenario:status`: `totalSharesOnRecord=0`, `paused=false`, `distributio
 Final `scenario:status`: `totalSharesOnRecord=1000000`, `paused=false`, `distributionCount=1`, `resolutionCount=2`.
 Resolution 0 is `resolved=true`, `passed=true`, `tallyRequested=true`. Resolution 1 is `resolved=false`, `passed=false`,
 `tallyRequested=true`, ready for a judge-triggered final settle.
+
+## Post-run additions (2026-07-03, review pass)
+
+A second judge-triggerable resolution was staged so more than one visitor can perform the settle-with-proof flow.
+
+| Step                        | Detail                                                       | Tx                                                                                                                                                                       |
+| --------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Propose resolution 2        | "Authorize a follow-on employee share pool", 25-block window | [0x93dc76bf07a1cf30ca28e674581d4f32f2441c1b55dd5f8b4b3609c37b4943c8](https://sepolia.etherscan.io/tx/0x93dc76bf07a1cf30ca28e674581d4f32f2441c1b55dd5f8b4b3609c37b4943c8) |
+| Vote resolution 2, deployer | FOR                                                          | [0xc3a48947738b70ab5358c53946e2eba0eb40240ca8c0d807b9f952bb8cefd916](https://sepolia.etherscan.io/tx/0xc3a48947738b70ab5358c53946e2eba0eb40240ca8c0d807b9f952bb8cefd916) |
+| Vote resolution 2, voter 1  | AGAINST                                                      | [0xe479662e025fc40cd48bf098ab32b7eab423957b371e71464d6b7eefa3c941b3](https://sepolia.etherscan.io/tx/0xe479662e025fc40cd48bf098ab32b7eab423957b371e71464d6b7eefa3c941b3) |
+| Vote resolution 2, voter 2  | FOR                                                          | [0xd96e714c17999a79db3ca13be0c80eb0a9ca8e81b157461c02f4c22005557224](https://sepolia.etherscan.io/tx/0xd96e714c17999a79db3ca13be0c80eb0a9ca8e81b157461c02f4c22005557224) |
+| Request resolution 2 tally  | Tally requested and left unresolved                          | [0x3d9dca982187a1fd36b6b35807b5c2fc37158eb3d211bcf5dd7287787817ed95](https://sepolia.etherscan.io/tx/0x3d9dca982187a1fd36b6b35807b5c2fc37158eb3d211bcf5dd7287787817ed95) |
+
+Resolutions 1 and 2 are both `tallyRequested=true`, `resolved=false` — either can be settled permissionlessly from the
+governance page. Sourcify verification for all five contracts was completed in this pass (see Verification above).
