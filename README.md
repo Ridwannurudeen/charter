@@ -58,14 +58,15 @@ The frontend loads the relayer SDK only through `web/lib/fhevm.ts`. User decrypt
 
 ## Flows
 
-| Flow              | Contract path                                                                                      | What stays private                  | What becomes public                                                   |
-| ----------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------- | --------------------------------------------------------------------- |
-| Issuance          | `CharterShares.confidentialMint(address,bytes32,bytes)`                                            | Each minted allocation              | Holder address and encrypted handle                                   |
-| Supply disclosure | `requestSupplyDisclosure()` -> relayer `publicDecrypt` -> `finalizeSupplyDisclosure(uint64,bytes)` | Individual balances                 | Total issued shares, record block, and KMS proof verification         |
-| Distributions     | `pause()` -> `DividendDistributor.declare()` -> `payBatch()`                                       | Each investor balance and payout    | Pool amount, distribution id, batch investor addresses, and paid flag |
-| Resolutions       | self-delegate -> `propose()` -> encrypted `castVote()` -> `requestTally()` -> `settle(bool,bytes)` | Vote direction and weight per voter | Pass/fail outcome and which addresses voted                           |
-| Observer access   | `setObserver(account, observer)` -> `/auditor` decrypts `confidentialBalanceOf(account)`           | Everyone else still sees ciphertext | Holder-chosen observer can decrypt that holder's share balance        |
-| Self-serve demo   | `DemoShareFaucet.claim()` and `MockConfidentialUSD.faucet()`                                       | Claimed balances                    | Claim transaction and recipient address                               |
+| Flow              | Contract path                                                                                          | What stays private                  | What becomes public                                                   |
+| ----------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------- | --------------------------------------------------------------------- |
+| Issuance          | `CharterShares.confidentialMint(address,bytes32,bytes)`                                                | Each minted allocation              | Holder address and encrypted handle                                   |
+| Supply disclosure | `requestSupplyDisclosure()` -> relayer `publicDecrypt` -> `finalizeSupplyDisclosure(uint64,bytes)`     | Individual balances                 | Total issued shares, record block, and KMS proof verification         |
+| Distributions     | `pause()` -> `DividendDistributor.declare()` -> `payBatch()`                                           | Each investor balance and payout    | Pool amount, distribution id, batch investor addresses, and paid flag |
+| Resolutions       | self-delegate -> `propose()` -> encrypted `castVote()` -> `requestTally()` -> `settle(bool,bytes)`     | Vote direction and weight per voter | Pass/fail outcome and which addresses voted                           |
+| Observer access   | `setObserver(account, observer)` -> `/auditor` decrypts `confidentialBalanceOf(account)`               | Everyone else still sees ciphertext | Holder-chosen observer can decrypt that holder's share balance        |
+| Buyback (tender)  | `openOffer(price, cap)` -> encrypted `tender(qty)` -> `requestTotal()` -> `settleTotal()` -> `claim()` | Each holder's tendered quantity     | Price, cap, aggregate tendered, and whether oversubscribed            |
+| Self-serve demo   | `DemoShareFaucet.claim()` and `MockConfidentialUSD.faucet()`                                           | Claimed balances                    | Claim transaction and recipient address                               |
 
 Distribution math is computed over ciphertext: `encBalance * pool / totalSharesOnRecord`. The divisor is scalar and
 public; individual balances and payout handles remain encrypted. Resolution voting uses an encrypted `ebool` and
@@ -147,6 +148,7 @@ match).
 | `DividendDistributor`                      | `0x42C8c19fbC1E2F5649d540237759E7bFee5617b9` | [verified](https://sepolia.etherscan.io/address/0x42C8c19fbC1E2F5649d540237759E7bFee5617b9#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x42C8c19fbC1E2F5649d540237759E7bFee5617b9/) |
 | `CharterResolutions` (v1)                  | `0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3` | [verified](https://sepolia.etherscan.io/address/0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3/) |
 | `CharterResolutionsV2` (active governance) | `0x88f7337CCdD92Cd4B27509edBA3b3bb66a34e4e2` | [verified](https://sepolia.etherscan.io/address/0x88f7337CCdD92Cd4B27509edBA3b3bb66a34e4e2#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x88f7337CCdD92Cd4B27509edBA3b3bb66a34e4e2/) |
+| `ConfidentialTenderOffer` (buyback)        | `0xd61aCcaC2F89F78016F22861156c4F9121edE575` | [verified](https://sepolia.etherscan.io/address/0xd61aCcaC2F89F78016F22861156c4F9121edE575#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xd61aCcaC2F89F78016F22861156c4F9121edE575/) |
 | `DemoShareFaucet`                          | `0x9AF5A8e7d036E4347D0458748D9bC27131D0710C` | [verified](https://sepolia.etherscan.io/address/0x9AF5A8e7d036E4347D0458748D9bC27131D0710C#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x9AF5A8e7d036E4347D0458748D9bC27131D0710C/) |
 
 ## Composes With
@@ -163,8 +165,13 @@ longer pass on a single vote — by deploying V2 against the **same share token*
 behaviour underneath the equity ledger. Both modules remain verified on-chain (see the addresses table). The frontend
 now points at V2, and the quorum is enforced on the public voter count so nothing that was previously private is leaked.
 
+The same registry extends to secondary-market mechanics: `ConfidentialTenderOffer` is a registered module that runs a
+confidential share buyback. Holders tender an encrypted quantity, only the aggregate is disclosed (with a KMS proof),
+and oversubscribed offers clear pro-rata on ciphertext — how much any single holder sells is never revealed. This is the
+kind of confidential secondary-market primitive that a public-chain equity registry uniquely enables.
+
 Charter is not a token cap-table dashboard. It is the privacy-preserving equity registry layer beneath dividends,
-shareholder governance, and auditor access.
+shareholder governance, buybacks, and auditor access.
 
 ## Program
 

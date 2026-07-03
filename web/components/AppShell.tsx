@@ -14,6 +14,7 @@ const TABS = [
   { href: "/issuer", label: "Issuer Console" },
   { href: "/investor", label: "Investor Portal" },
   { href: "/governance", label: "Governance" },
+  { href: "/tender", label: "Buyback" },
   { href: "/auditor", label: "Auditor" },
 ];
 

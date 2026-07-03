@@ -6,6 +6,7 @@ export const ADDRESSES = {
   mcUSD: process.env.NEXT_PUBLIC_MCUSD_ADDRESS ?? ZERO_ADDRESS,
   distributor: process.env.NEXT_PUBLIC_DISTRIBUTOR_ADDRESS ?? ZERO_ADDRESS,
   resolutions: process.env.NEXT_PUBLIC_RESOLUTIONS_ADDRESS ?? ZERO_ADDRESS,
+  tender: process.env.NEXT_PUBLIC_TENDER_ADDRESS ?? ZERO_ADDRESS,
   demoFaucet: process.env.NEXT_PUBLIC_DEMO_FAUCET_ADDRESS ?? ZERO_ADDRESS,
 } as const;
 
@@ -73,6 +74,17 @@ export const RESOLUTIONS_ABI = [
   "function castVote(uint256 id, bytes32 encryptedSupport, bytes inputProof)",
   "function requestTally(uint256 id)",
   "function settle(uint256 id, bool passedClear, bytes decryptionProof)",
+] as const;
+
+export const TENDER_ABI = [
+  "function offerCount() view returns (uint256)",
+  "function getOffer(uint256 id) view returns (tuple(address treasury, address paymentToken, uint64 pricePerShare, uint64 maxShares, uint48 deadline, bytes32 totalTendered, bool totalRequested, bool totalSettled, uint64 totalTenderedClear))",
+  "function tendered(uint256 id, address holder) view returns (bool)",
+  "function openOffer(address paymentToken, uint64 pricePerShare, uint64 maxShares, uint48 votingPeriod) returns (uint256)",
+  "function tender(uint256 id, bytes32 encryptedQuantity, bytes inputProof)",
+  "function requestTotal(uint256 id)",
+  "function settleTotal(uint256 id, uint64 clearTotal, bytes decryptionProof)",
+  "function claim(uint256 id, address[] holders)",
 ] as const;
 
 export const ZERO_HANDLE = ("0x" + "0".repeat(64)) as `0x${string}`;

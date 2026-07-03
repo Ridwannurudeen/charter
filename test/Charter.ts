@@ -9,6 +9,7 @@ import {
   CharterResolutionsV2,
   CharterShares,
   CharterShares__factory,
+  ConfidentialTenderOffer,
   DemoShareFaucet,
   DemoShareFaucet__factory,
   DividendDistributor,
@@ -411,6 +412,87 @@ describe("Charter", function () {
         demoFaucet,
         "AlreadyClaimed",
       );
+    });
+  });
+
+  describe("confidential tender offer (buyback)", function () {
+    let tender: ConfidentialTenderOffer;
+    let tenderAddress: string;
+    let seller1: HardhatEthersSigner;
+    let seller2: HardhatEthersSigner;
+    const FAR_FUTURE = 2_000_000_000; // uint48 operator expiry
+
+    before(async function () {
+      const ethSigners = await ethers.getSigners();
+      seller1 = ethSigners[7];
+      seller2 = ethSigners[8];
+
+      const factory = await ethers.getContractFactory("ConfidentialTenderOffer");
+      tender = (await factory.deploy(sharesAddress)) as unknown as ConfidentialTenderOffer;
+      tenderAddress = await tender.getAddress();
+      await (await shares.setModule(tenderAddress, true)).wait();
+
+      // Fresh holders with known balances.
+      await mintShares(seller1, 10_000);
+      await mintShares(seller2, 5_000);
+      // Issuer holds payment-token escrow and approves the buyback to pull it.
+      await (await mcUSD.mint(signers.issuer.address, 1_000_000)).wait();
+      await (await mcUSD.setOperator(tenderAddress, FAR_FUTURE)).wait();
+      // Sellers let the buyback pull their accepted shares.
+      await (await shares.connect(seller1).setOperator(tenderAddress, FAR_FUTURE)).wait();
+      await (await shares.connect(seller2).setOperator(tenderAddress, FAR_FUTURE)).wait();
+    });
+
+    const submitTender = async (id: bigint, seller: HardhatEthersSigner, qty: number) => {
+      const input = await fhevm.createEncryptedInput(tenderAddress, seller.address).add64(qty).encrypt();
+      await (await tender.connect(seller).tender(id, input.handles[0], input.inputProof)).wait();
+    };
+
+    const settle = async (id: bigint) => {
+      await network.provider.send("hardhat_mine", ["0x20"]);
+      await (await tender.requestTotal(id)).wait();
+      const o = await tender.getOffer(id);
+      const result = await fhevm.publicDecrypt([o.totalTendered]);
+      const total = result.clearValues[o.totalTendered as `0x${string}`] as bigint;
+      await (await tender.settleTotal(id, total, result.decryptionProof)).wait();
+      return total;
+    };
+
+    it("fills every tender when undersubscribed, paying sellers in ciphertext", async function () {
+      const price = 2;
+      await (await tender.openOffer(mcUSDAddress, price, 20_000, 20)).wait();
+      const id = (await tender.offerCount()) - 1n;
+      await submitTender(id, seller1, 4_000);
+      await submitTender(id, seller2, 3_000);
+
+      const total = await settle(id);
+      expect(total).to.eq(7_000n); // 7,000 < 20,000 cap: full fill
+
+      await (await tender.claim(id, [seller1.address, seller2.address])).wait();
+      expect(await decryptSharesOf(seller1)).to.eq(10_000 - 4_000);
+      expect(await decryptSharesOf(seller2)).to.eq(5_000 - 3_000);
+      expect(await decryptUSDOf(seller1)).to.eq(4_000 * price);
+      expect(await decryptUSDOf(seller2)).to.eq(3_000 * price);
+    });
+
+    it("scales accepted shares pro-rata on ciphertext when oversubscribed", async function () {
+      const price = 2;
+      // Remaining balances: seller1 6,000, seller2 2,000. Cap 4,000 with 8,000 tendered.
+      await (await tender.openOffer(mcUSDAddress, price, 4_000, 20)).wait();
+      const id = (await tender.offerCount()) - 1n;
+      await submitTender(id, seller1, 6_000);
+      await submitTender(id, seller2, 2_000);
+
+      const total = await settle(id);
+      expect(total).to.eq(8_000n); // oversubscribed vs the 4,000 cap
+
+      const s1Before = await decryptSharesOf(seller1);
+      const s2Before = await decryptSharesOf(seller2);
+      await (await tender.claim(id, [seller1.address, seller2.address])).wait();
+
+      // accepted = tendered * cap / total: seller1 6000*4000/8000=3000, seller2 2000*4000/8000=1000.
+      expect(s1Before - (await decryptSharesOf(seller1))).to.eq(3_000);
+      expect(s2Before - (await decryptSharesOf(seller2))).to.eq(1_000);
     });
   });
 });

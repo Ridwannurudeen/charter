@@ -11,6 +11,7 @@ import {
   RESOLUTIONS_ABI,
   SEPOLIA_CHAIN_ID,
   SHARES_ABI,
+  TENDER_ABI,
 } from "./contracts";
 
 type WalletState = {
@@ -25,6 +26,7 @@ type WalletState = {
   mcUSD: Contract | null;
   distributor: Contract | null;
   resolutions: Contract | null;
+  tender: Contract | null;
   isAdmin: boolean;
   isAgent: boolean;
   refreshRoles: () => Promise<void>;
@@ -115,6 +117,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     () => (signer && onSepolia ? new Contract(ADDRESSES.demoFaucet, DEMO_FAUCET_ABI, signer) : null),
     [signer, onSepolia],
   );
+  const tender = useMemo(
+    () => (signer && onSepolia ? new Contract(ADDRESSES.tender, TENDER_ABI, signer) : null),
+    [signer, onSepolia],
+  );
 
   const refreshRoles = useCallback(async () => {
     if (!shares || !address) {
@@ -151,6 +157,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       mcUSD,
       distributor,
       resolutions,
+      tender,
       isAdmin,
       isAgent,
       refreshRoles,
@@ -167,6 +174,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       mcUSD,
       distributor,
       resolutions,
+      tender,
       isAdmin,
       isAgent,
       refreshRoles,

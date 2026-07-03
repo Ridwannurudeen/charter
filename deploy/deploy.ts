@@ -42,18 +42,27 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log: true,
   });
 
+  // Confidential secondary-market buyback module.
+  const tenderOffer = await deploy("ConfidentialTenderOffer", {
+    from: deployer,
+    args: [shares.address],
+    log: true,
+  });
+
   await execute("CharterShares", { from: deployer, log: true }, "setModule", distributor.address, true);
   await execute("CharterShares", { from: deployer, log: true }, "setModule", resolutions.address, true);
   await execute("CharterShares", { from: deployer, log: true }, "setModule", resolutionsV2.address, true);
+  await execute("CharterShares", { from: deployer, log: true }, "setModule", tenderOffer.address, true);
   await execute("CharterShares", { from: deployer, log: true }, "addAgent", deployer);
   await execute("CharterShares", { from: deployer, log: true }, "addAgent", demoFaucet.address);
 
-  console.log(`CharterShares:        ${shares.address}`);
-  console.log(`MockConfidentialUSD:  ${mcUSD.address}`);
-  console.log(`DividendDistributor:  ${distributor.address}`);
-  console.log(`CharterResolutions:   ${resolutions.address}`);
-  console.log(`CharterResolutionsV2: ${resolutionsV2.address}`);
-  console.log(`DemoShareFaucet:      ${demoFaucet.address}`);
+  console.log(`CharterShares:            ${shares.address}`);
+  console.log(`MockConfidentialUSD:      ${mcUSD.address}`);
+  console.log(`DividendDistributor:      ${distributor.address}`);
+  console.log(`CharterResolutions:       ${resolutions.address}`);
+  console.log(`CharterResolutionsV2:     ${resolutionsV2.address}`);
+  console.log(`ConfidentialTenderOffer:  ${tenderOffer.address}`);
+  console.log(`DemoShareFaucet:          ${demoFaucet.address}`);
 };
 export default func;
 func.id = "deploy_charter";
