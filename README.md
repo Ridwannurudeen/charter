@@ -135,16 +135,16 @@ cd web && npm i && npm run dev
 
 ## Deployed Contracts
 
-Round-two contracts were redeployed on Sepolia on 2026-07-03 and source-verified on Sourcify (partial match). Etherscan
-source verification is pending an API key; the Etherscan links below show the deployed bytecode and transaction history.
+Round-two contracts were redeployed on Sepolia on 2026-07-03 and source-verified on both Etherscan and Sourcify (partial
+match).
 
-| Contract              | Address                                      | Etherscan                                                                                       | Sourcify                                                                                                                |
-| --------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `CharterShares`       | `0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A` | [address](https://sepolia.etherscan.io/address/0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A/) |
-| `MockConfidentialUSD` | `0xb6B08dC3014D944231E01Ad5a0292Efeea859112` | [address](https://sepolia.etherscan.io/address/0xb6B08dC3014D944231E01Ad5a0292Efeea859112#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xb6B08dC3014D944231E01Ad5a0292Efeea859112/) |
-| `DividendDistributor` | `0x42C8c19fbC1E2F5649d540237759E7bFee5617b9` | [address](https://sepolia.etherscan.io/address/0x42C8c19fbC1E2F5649d540237759E7bFee5617b9#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x42C8c19fbC1E2F5649d540237759E7bFee5617b9/) |
-| `CharterResolutions`  | `0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3` | [address](https://sepolia.etherscan.io/address/0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3/) |
-| `DemoShareFaucet`     | `0x9AF5A8e7d036E4347D0458748D9bC27131D0710C` | [address](https://sepolia.etherscan.io/address/0x9AF5A8e7d036E4347D0458748D9bC27131D0710C#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x9AF5A8e7d036E4347D0458748D9bC27131D0710C/) |
+| Contract              | Address                                      | Etherscan                                                                                        | Sourcify                                                                                                                |
+| --------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `CharterShares`       | `0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A` | [verified](https://sepolia.etherscan.io/address/0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A/) |
+| `MockConfidentialUSD` | `0xb6B08dC3014D944231E01Ad5a0292Efeea859112` | [verified](https://sepolia.etherscan.io/address/0xb6B08dC3014D944231E01Ad5a0292Efeea859112#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xb6B08dC3014D944231E01Ad5a0292Efeea859112/) |
+| `DividendDistributor` | `0x42C8c19fbC1E2F5649d540237759E7bFee5617b9` | [verified](https://sepolia.etherscan.io/address/0x42C8c19fbC1E2F5649d540237759E7bFee5617b9#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x42C8c19fbC1E2F5649d540237759E7bFee5617b9/) |
+| `CharterResolutions`  | `0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3` | [verified](https://sepolia.etherscan.io/address/0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3/) |
+| `DemoShareFaucet`     | `0x9AF5A8e7d036E4347D0458748D9bC27131D0710C` | [verified](https://sepolia.etherscan.io/address/0x9AF5A8e7d036E4347D0458748D9bC27131D0710C#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x9AF5A8e7d036E4347D0458748D9bC27131D0710C/) |
 
 ## Composes With
 

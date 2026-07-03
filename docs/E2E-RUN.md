@@ -30,10 +30,10 @@ No mnemonic, private key, RPC URL, or API token was printed or written during th
 
 ## Verification
 
-| Target    | Result                                                                                          |
-| --------- | ----------------------------------------------------------------------------------------------- |
-| Sourcify  | All five redeployed contracts verified on 2026-07-03 (partial match, keyless `hardhat verify`). |
-| Etherscan | Source verification pending an API key; address pages show deployed bytecode and tx history.    |
+| Target    | Result                                                                                  |
+| --------- | --------------------------------------------------------------------------------------- |
+| Etherscan | All five redeployed contracts source-verified (confirmed via API by contract name).     |
+| Sourcify  | All five redeployed contracts verified on 2026-07-03 (partial match, `hardhat verify`). |
 
 ## Frontend Wiring
 
