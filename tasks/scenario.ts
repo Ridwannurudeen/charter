@@ -4,7 +4,7 @@ import { task } from "hardhat/config";
 import type { HardhatRuntimeEnvironment } from "hardhat/types";
 
 import type {
-  CharterResolutionsV2,
+  CharterResolutionsV3,
   CharterShares,
   DemoShareFaucet,
   DividendDistributor,
@@ -21,7 +21,7 @@ type ScenarioContracts = {
   mcUSDAddress: string;
   distributor: DividendDistributor;
   distributorAddress: string;
-  resolutions: CharterResolutionsV2;
+  resolutions: CharterResolutionsV3;
   resolutionsAddress: string;
   demoFaucet: DemoShareFaucet;
   demoFaucetAddress: string;
@@ -80,7 +80,7 @@ async function contracts(
       hre.deployments.get("CharterShares"),
       hre.deployments.get("MockConfidentialUSD"),
       hre.deployments.get("DividendDistributor"),
-      hre.deployments.get("CharterResolutionsV2"),
+      hre.deployments.get("CharterResolutionsV3"),
       hre.deployments.get("DemoShareFaucet"),
     ]);
 
@@ -92,7 +92,7 @@ async function contracts(
     mcUSDAddress: mcUSDDeployment.address,
     distributor: await hre.ethers.getContractAt("DividendDistributor", distributorDeployment.address, signer),
     distributorAddress: distributorDeployment.address,
-    resolutions: await hre.ethers.getContractAt("CharterResolutionsV2", resolutionsDeployment.address, signer),
+    resolutions: await hre.ethers.getContractAt("CharterResolutionsV3", resolutionsDeployment.address, signer),
     resolutionsAddress: resolutionsDeployment.address,
     demoFaucet: await hre.ethers.getContractAt("DemoShareFaucet", demoFaucetDeployment.address, signer),
     demoFaucetAddress: demoFaucetDeployment.address,

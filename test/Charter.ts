@@ -7,6 +7,7 @@ import {
   CharterResolutions,
   CharterResolutions__factory,
   CharterResolutionsV2,
+  CharterResolutionsV3,
   CharterShares,
   CharterShares__factory,
   ConfidentialTenderOffer,
@@ -493,6 +494,56 @@ describe("Charter", function () {
       // accepted = tendered * cap / total: seller1 6000*4000/8000=3000, seller2 2000*4000/8000=1000.
       expect(s1Before - (await decryptSharesOf(seller1))).to.eq(3_000);
       expect(s2Before - (await decryptSharesOf(seller2))).to.eq(1_000);
+    });
+  });
+
+  describe("resolutions v3 shareholder proposals", function () {
+    let v3: CharterResolutionsV3;
+    let v3Address: string;
+
+    before(async function () {
+      const factory = await ethers.getContractFactory("CharterResolutionsV3");
+      v3 = (await factory.deploy(sharesAddress, 3)) as unknown as CharterResolutionsV3;
+      v3Address = await v3.getAddress();
+      await (await shares.setModule(v3Address, true)).wait();
+    });
+
+    it("lets a self-delegated shareholder (not the issuer) open a resolution", async function () {
+      // alice self-delegated during issuance; she is not an admin/agent.
+      expect(await v3.canPropose(signers.alice.address)).to.eq(true);
+      await (await v3.connect(signers.alice).propose("Shareholder-initiated: expand the board", 20)).wait();
+      const id = (await v3.resolutionCount()) - 1n;
+      expect((await v3.getResolution(id)).description).to.eq("Shareholder-initiated: expand the board");
+    });
+
+    it("rejects proposals from a wallet with no voting power", async function () {
+      const stranger = (await ethers.getSigners())[9];
+      expect(await v3.canPropose(stranger.address)).to.eq(false);
+      await expect(v3.connect(stranger).propose("Spam", 20)).to.be.revertedWithCustomError(
+        v3,
+        "ResolutionsCannotPropose",
+      );
+    });
+
+    it("runs the full shareholder-driven loop to a settled outcome", async function () {
+      await (await v3.connect(signers.alice).propose("Shareholder-initiated: approve buyback", 20)).wait();
+      const id = (await v3.resolutionCount()) - 1n;
+      const vote = async (voter: HardhatEthersSigner, support: boolean) => {
+        const input = await fhevm.createEncryptedInput(v3Address, voter.address).addBool(support).encrypt();
+        await (await v3.connect(voter).castVote(id, input.handles[0], input.inputProof)).wait();
+      };
+      await vote(signers.alice, true);
+      await vote(signers.bob, true);
+      await vote(signers.carol, false);
+
+      await network.provider.send("hardhat_mine", ["0x20"]);
+      await (await v3.requestTally(id)).wait();
+      const r = await v3.getResolution(id);
+      expect(r.quorumReached).to.eq(true);
+      const result = await fhevm.publicDecrypt([r.passedHandle]);
+      const passed = result.clearValues[r.passedHandle as `0x${string}`] as boolean;
+      await (await v3.settle(id, passed, result.decryptionProof)).wait();
+      expect((await v3.getResolution(id)).resolved).to.eq(true);
     });
   });
 });

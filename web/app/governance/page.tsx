@@ -149,6 +149,7 @@ function Governance() {
         <p className="mt-1 text-sm text-muted">
           Your choice and weight are encrypted end-to-end and never disclosed. Only the resolution&apos;s pass/fail
           outcome is revealed, proven on-chain by a KMS decryption proof. Who voted is public; how they voted is not.
+          Any shareholder with active voting power can propose a resolution — not just the issuer.
           {minVoters > 0 && ` A resolution needs at least ${minVoters} voters to reach quorum before it can settle.`}
         </p>
       </div>
@@ -175,10 +176,10 @@ function Governance() {
         </Callout>
       )}
 
-      {(isAdmin || isAgent) && (
+      {(isAdmin || isAgent || votingActive) && (
         <Card
           title="Propose a resolution"
-          subtitle="Voting power snapshots at the current block; voting opens immediately after."
+          subtitle="Any shareholder with active voting power can open a resolution. Voting power snapshots at the current block; voting opens immediately after."
         >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <div className="flex-1">

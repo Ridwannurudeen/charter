@@ -26,8 +26,10 @@ for you.
    **Settle with proof** button (no voting power needed). It runs a public KMS decryption of the _outcome only_ and
    verifies the proof on-chain (`FHE.checkSignatures`); watch the `PublicDecryptionVerified` event land on Etherscan.
    Only pass/fail is revealed — the exact tallies never are, and the active module enforces a voter quorum.
-4. **(Optional) Cast an encrypted vote.** If you activated voting power (Investor portal) before an open resolution's
-   snapshot block, you can vote For/Against on it from Governance. Neither your choice nor your weight is revealed.
+4. **Drive governance yourself (self-serve loop).** Once you have claimed shares and clicked **Activate voting power**,
+   the Governance page shows a **Propose a resolution** form — any shareholder can open one, not just the issuer.
+   Propose one, cast an encrypted vote on it, and (after the short window) settle it. If you are the only voter it
+   correctly fails quorum; grab a second wallet or a co-judge to carry it to a decrypted outcome.
 
 Bonus: use the **mcUSD faucet** on the Investor page to get a confidential-stablecoin balance, then **Decrypt my
 payouts** to see a dividend you received, decryptable only by you.
@@ -48,14 +50,14 @@ Full trust model and constraints are in the README's "Design Decisions And Const
 
 ## Deployed & verified on Sepolia (source-verified on Etherscan + Sourcify)
 
-| Contract                                         | Address                                                                                                                              |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| CharterShares (registry)                         | [`0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A`](https://sepolia.etherscan.io/address/0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A#code) |
-| DividendDistributor                              | [`0x42C8c19fbC1E2F5649d540237759E7bFee5617b9`](https://sepolia.etherscan.io/address/0x42C8c19fbC1E2F5649d540237759E7bFee5617b9#code) |
-| CharterResolutionsV2 (active governance, quorum) | [`0x88f7337CCdD92Cd4B27509edBA3b3bb66a34e4e2`](https://sepolia.etherscan.io/address/0x88f7337CCdD92Cd4B27509edBA3b3bb66a34e4e2#code) |
-| ConfidentialTenderOffer (buyback)                | [`0xd61aCcaC2F89F78016F22861156c4F9121edE575`](https://sepolia.etherscan.io/address/0xd61aCcaC2F89F78016F22861156c4F9121edE575#code) |
-| MockConfidentialUSD                              | [`0xb6B08dC3014D944231E01Ad5a0292Efeea859112`](https://sepolia.etherscan.io/address/0xb6B08dC3014D944231E01Ad5a0292Efeea859112#code) |
-| DemoShareFaucet                                  | [`0x9AF5A8e7d036E4347D0458748D9bC27131D0710C`](https://sepolia.etherscan.io/address/0x9AF5A8e7d036E4347D0458748D9bC27131D0710C#code) |
+| Contract                                                                 | Address                                                                                                                              |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| CharterShares (registry)                                                 | [`0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A`](https://sepolia.etherscan.io/address/0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A#code) |
+| DividendDistributor                                                      | [`0x42C8c19fbC1E2F5649d540237759E7bFee5617b9`](https://sepolia.etherscan.io/address/0x42C8c19fbC1E2F5649d540237759E7bFee5617b9#code) |
+| CharterResolutionsV3 (active governance: shareholder proposals + quorum) | [`0x4561F5E4515C674382141452C043E53F1f8fA5FF`](https://sepolia.etherscan.io/address/0x4561F5E4515C674382141452C043E53F1f8fA5FF#code) |
+| ConfidentialTenderOffer (buyback)                                        | [`0xd61aCcaC2F89F78016F22861156c4F9121edE575`](https://sepolia.etherscan.io/address/0xd61aCcaC2F89F78016F22861156c4F9121edE575#code) |
+| MockConfidentialUSD                                                      | [`0xb6B08dC3014D944231E01Ad5a0292Efeea859112`](https://sepolia.etherscan.io/address/0xb6B08dC3014D944231E01Ad5a0292Efeea859112#code) |
+| DemoShareFaucet                                                          | [`0x9AF5A8e7d036E4347D0458748D9bC27131D0710C`](https://sepolia.etherscan.io/address/0x9AF5A8e7d036E4347D0458748D9bC27131D0710C#code) |
 
 Run the contract suite locally: `npm i && npx hardhat test`. Full on-chain lifecycle with every tx hash is in
 `docs/E2E-RUN.md`.

@@ -76,8 +76,9 @@ checkpointed `getPastVotes` weight, then discloses only the encrypted comparison
 
 - Only the pass/fail outcome of a resolution is disclosed. Individual vote weights and directions never leave
   ciphertext. Voter participation is public.
-- The active governance module (`CharterResolutionsV2`) enforces a minimum-participation quorum (measured on the public
-  voter count, so it leaks nothing new). Below quorum a resolution fails without any tally being disclosed.
+- The active governance module (`CharterResolutionsV3`) lets any self-delegated shareholder open a resolution (not just
+  the issuer) and enforces a minimum-participation quorum (measured on the public voter count, so it leaks nothing new).
+  Below quorum a resolution fails without any tally being disclosed.
 - Cap-table membership and participation are public; only quantities are encrypted.
 - Dividend record date is the pause that must be in place at `declare`. The contract enforces pause-before-declare.
 - Re-run supply disclosure after any issuance before declaring a distribution. `supplyDisclosureStale()` enforces this.
@@ -146,8 +147,9 @@ match).
 | `CharterShares`                            | `0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A` | [verified](https://sepolia.etherscan.io/address/0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A/) |
 | `MockConfidentialUSD`                      | `0xb6B08dC3014D944231E01Ad5a0292Efeea859112` | [verified](https://sepolia.etherscan.io/address/0xb6B08dC3014D944231E01Ad5a0292Efeea859112#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xb6B08dC3014D944231E01Ad5a0292Efeea859112/) |
 | `DividendDistributor`                      | `0x42C8c19fbC1E2F5649d540237759E7bFee5617b9` | [verified](https://sepolia.etherscan.io/address/0x42C8c19fbC1E2F5649d540237759E7bFee5617b9#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x42C8c19fbC1E2F5649d540237759E7bFee5617b9/) |
-| `CharterResolutions` (v1)                  | `0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3` | [verified](https://sepolia.etherscan.io/address/0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3/) |
-| `CharterResolutionsV2` (active governance) | `0x88f7337CCdD92Cd4B27509edBA3b3bb66a34e4e2` | [verified](https://sepolia.etherscan.io/address/0x88f7337CCdD92Cd4B27509edBA3b3bb66a34e4e2#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x88f7337CCdD92Cd4B27509edBA3b3bb66a34e4e2/) |
+| `CharterResolutions` (v1, history)         | `0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3` | [verified](https://sepolia.etherscan.io/address/0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3/) |
+| `CharterResolutionsV2` (v2, history)       | `0x88f7337CCdD92Cd4B27509edBA3b3bb66a34e4e2` | [verified](https://sepolia.etherscan.io/address/0x88f7337CCdD92Cd4B27509edBA3b3bb66a34e4e2#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x88f7337CCdD92Cd4B27509edBA3b3bb66a34e4e2/) |
+| `CharterResolutionsV3` (active governance) | `0x4561F5E4515C674382141452C043E53F1f8fA5FF` | [verified](https://sepolia.etherscan.io/address/0x4561F5E4515C674382141452C043E53F1f8fA5FF#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x4561F5E4515C674382141452C043E53F1f8fA5FF/) |
 | `ConfidentialTenderOffer` (buyback)        | `0xd61aCcaC2F89F78016F22861156c4F9121edE575` | [verified](https://sepolia.etherscan.io/address/0xd61aCcaC2F89F78016F22861156c4F9121edE575#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xd61aCcaC2F89F78016F22861156c4F9121edE575/) |
 | `DemoShareFaucet`                          | `0x9AF5A8e7d036E4347D0458748D9bC27131D0710C` | [verified](https://sepolia.etherscan.io/address/0x9AF5A8e7d036E4347D0458748D9bC27131D0710C#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x9AF5A8e7d036E4347D0458748D9bC27131D0710C/) |
 
@@ -158,12 +160,17 @@ beside the Confidential Wrapper Registry and other ERC-7984 token rails. The mod
 governance, compliance, or reporting modules plug into the share token without changing the registry itself, with module
 registration acting as the explicit trust boundary.
 
-**This composability is demonstrated live, not just claimed.** The governance module was upgraded on-chain from
-`CharterResolutions` (v1) to `CharterResolutionsV2` — which adds a minimum-participation quorum so a resolution can no
-longer pass on a single vote — by deploying V2 against the **same share token** and registering it through
-`CharterShares.setModule`. No share-token redeploy, no migration of holdings; the registry swapped the governance
-behaviour underneath the equity ledger. Both modules remain verified on-chain (see the addresses table). The frontend
-now points at V2, and the quorum is enforced on the public voter count so nothing that was previously private is leaked.
+**This composability is demonstrated live, not just claimed — twice.** The governance module was upgraded on-chain in
+two steps, each by deploying a new module against the **same share token** and registering it through
+`CharterShares.setModule` (no share-token redeploy, no migration of holdings):
+
+- **v1 -> v2** added a minimum-participation quorum, so a resolution can no longer pass on a single vote.
+- **v2 -> v3** opened proposal rights to any self-delegated shareholder (not just the issuer), so a holder can drive the
+  entire governance loop themselves: activate voting, propose, vote, and settle.
+
+All three modules remain verified on-chain (see the addresses table); the frontend points at v3. Quorum is enforced on
+the public voter count, so nothing that was previously private is leaked. This v1 -> v2 -> v3 lineage is the module
+registry working exactly as intended: behaviour beneath the equity ledger is swappable without disturbing the ledger.
 
 The same registry extends to secondary-market mechanics: `ConfidentialTenderOffer` is a registered module that runs a
 confidential share buyback. Holders tender an encrypted quantity, only the aggregate is disclosed (with a KMS proof),
