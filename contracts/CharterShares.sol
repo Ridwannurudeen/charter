@@ -34,6 +34,7 @@ contract CharterShares is ZamaEthereumConfig, ERC7984Rwa, ERC7984ObserverAccess,
     uint48 public recordTimepoint;
 
     euint64 private _pendingSupplyHandle;
+    uint48 private _lastSupplyChangeTimepoint;
 
     event ModuleSet(address indexed module, bool enabled);
     event SupplyDisclosureRequested(euint64 supplyHandle);
@@ -99,6 +100,11 @@ contract CharterShares is ZamaEthereumConfig, ERC7984Rwa, ERC7984ObserverAccess,
         emit SupplyDisclosed(clearSupply, recordTimepoint);
     }
 
+    /// @notice Returns true when shares were minted or burned after the last supply disclosure.
+    function supplyDisclosureStale() public view returns (bool) {
+        return _lastSupplyChangeTimepoint > recordTimepoint;
+    }
+
     /// @dev Registered modules may request access to handles this contract holds ACL
     /// for (e.g. voting-power checkpoints read by the resolutions module).
     function _validateHandleAllowance(bytes32) internal view override returns (bool) {
@@ -125,6 +131,9 @@ contract CharterShares is ZamaEthereumConfig, ERC7984Rwa, ERC7984ObserverAccess,
         address to,
         euint64 amount
     ) internal override(ERC7984Rwa, ERC7984ObserverAccess, ERC7984Votes) returns (euint64) {
+        if (from == address(0) || to == address(0)) {
+            _lastSupplyChangeTimepoint = clock();
+        }
         return super._update(from, to, amount);
     }
 }

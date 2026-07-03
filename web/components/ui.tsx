@@ -146,3 +146,33 @@ export function formatUnits6(value: bigint): string {
   const frac = (value % 1_000_000n).toString().padStart(6, "0").slice(0, 2);
   return `${whole.toLocaleString("en-US")}.${frac}`;
 }
+
+export function errorText(error: unknown, fallback = "unknown error"): string {
+  const message = error instanceof Error ? error.message : String(error ?? fallback);
+  if (message.includes("ResolutionsNoVotingPower")) return "You had no shares at the snapshot.";
+  if (message.includes("DistributorSharesNotPaused")) return "Pause share transfers before declaring or paying.";
+  if (message.includes("DistributorStaleSupply")) return "Re-run supply disclosure after issuance before declaring.";
+  if (message.includes("NotIssuer")) return "Connect with the issuer admin or agent wallet.";
+  if (message.includes("AlreadyClaimed")) return "This wallet has already claimed demo shares.";
+  return message.slice(0, 180);
+}
+
+export function txHashFrom(result: unknown): string | null {
+  if (result && typeof result === "object" && "hash" in result && typeof result.hash === "string") {
+    return result.hash;
+  }
+  return null;
+}
+
+export function TxLink({ hash }: { hash: string }) {
+  return (
+    <a
+      href={`https://sepolia.etherscan.io/tx/${hash}`}
+      target="_blank"
+      rel="noreferrer"
+      className="font-mono underline-offset-2 hover:text-primary-bright hover:underline"
+    >
+      {shortAddress(hash)}
+    </a>
+  );
+}

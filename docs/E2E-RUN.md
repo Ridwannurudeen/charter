@@ -1,80 +1,79 @@
-# Charter Sepolia E2E run
+# Charter Sepolia E2E Run
 
-Date: 2026-07-02 Network: Sepolia, chain id 11155111 Deployer: `0x04045Ca68BEF611adBD76e58C028cEFf4a3d640D` Investor 1:
-`0x510456aB08994AaC33fc8487b00774F531cD1e6C` Investor 2: `0x697B2D132a86d3f07ACe4a296f8d5c3bd150B7Dc`
+Date: 2026-07-03 Network: Sepolia, chain id 11155111 Deployer: `0x04045Ca68BEF611adBD76e58C028cEFf4a3d640D` Voter 1:
+`0x510456aB08994AaC33fc8487b00774F531cD1e6C` Voter 2: `0x697B2D132a86d3f07ACe4a296f8d5c3bd150B7Dc`
 
-No mnemonic or private key was printed or written during this run.
+No mnemonic, private key, RPC URL, or API token was printed or written during this run.
 
-## Gas preflight
+## Gas Preflight
 
-| Check                     | Result                                     |
-| ------------------------- | ------------------------------------------ |
-| Initial `eth_gasPrice`    | 40.616 gwei, held deployment               |
-| 10-minute recheck         | 51.649 gwei, held deployment               |
-| Second 10-minute recheck  | 13.511 gwei, deployment allowed            |
-| Final pre-deploy check    | 12.778 gwei, deployer balance 0.500000 ETH |
-| Post-deploy balance check | 0.397947 ETH                               |
+| Check                  | Result       |
+| ---------------------- | ------------ |
+| Pre-deploy gas price   | 1.2225 gwei  |
+| Pre-deploy balance     | 0.295592 ETH |
+| Final gas recheck      | 0.9946 gwei  |
+| Final deployer balance | 0.271276 ETH |
 
 ## Deployment
 
 | Step                         | Address                                      | Tx                                                                                                                                                                       |
 | ---------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `CharterShares` deploy       | `0x6E823303Ff9416Fa500915A5D56b32e2c3158e45` | [0x3db35cb106da48d30c71aeccc8eedb07869bb166ca7e05fd344f7679ff3315bc](https://sepolia.etherscan.io/tx/0x3db35cb106da48d30c71aeccc8eedb07869bb166ca7e05fd344f7679ff3315bc) |
-| `MockConfidentialUSD` deploy | `0xee3B37E13e4833969050Ae6D34311E4E3eD0396a` | [0x7a6994b361ee6593101a62d4c9f1309533d10449ba7ff70a72871d0cdc6f385b](https://sepolia.etherscan.io/tx/0x7a6994b361ee6593101a62d4c9f1309533d10449ba7ff70a72871d0cdc6f385b) |
-| `DividendDistributor` deploy | `0x33274e28cA4f04D5177c388517904f73F94CAd99` | [0x64b6eee20684c4b1777b97a64f1b727ef48b4c86ee1bfb9af2e47f9a0a8c9aa6](https://sepolia.etherscan.io/tx/0x64b6eee20684c4b1777b97a64f1b727ef48b4c86ee1bfb9af2e47f9a0a8c9aa6) |
-| `CharterResolutions` deploy  | `0x083E64CC897dD33a7616E30400c1620b9E5DAcD1` | [0xbb9d95e9335759562987d5b4c8fe8b3726fca5090030fb5232cc3f857a734350](https://sepolia.etherscan.io/tx/0xbb9d95e9335759562987d5b4c8fe8b3726fca5090030fb5232cc3f857a734350) |
-| Register distributor module  | `0x33274e28cA4f04D5177c388517904f73F94CAd99` | [0x66f28c19644b6c50868aa8818e3fff9928bcee2d26d19332d91aa8cd33496203](https://sepolia.etherscan.io/tx/0x66f28c19644b6c50868aa8818e3fff9928bcee2d26d19332d91aa8cd33496203) |
-| Register resolutions module  | `0x083E64CC897dD33a7616E30400c1620b9E5DAcD1` | [0x685953d9d021068db0e0dd0cc2d2196ae5070cec1c5daaa2486cccbba71a2ebc](https://sepolia.etherscan.io/tx/0x685953d9d021068db0e0dd0cc2d2196ae5070cec1c5daaa2486cccbba71a2ebc) |
-| Add deployer agent role      | `0x04045Ca68BEF611adBD76e58C028cEFf4a3d640D` | [0x40a39ce64fe8c3e10ddebca7e75adc939b8222fc59f2ab33eebb5f0d44aa72f1](https://sepolia.etherscan.io/tx/0x40a39ce64fe8c3e10ddebca7e75adc939b8222fc59f2ab33eebb5f0d44aa72f1) |
+| `CharterShares` deploy       | `0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A` | [0x287e581d2c3b934d78f69df039f4d4cb238f12b6b411fb8ebd767c7191ceef91](https://sepolia.etherscan.io/tx/0x287e581d2c3b934d78f69df039f4d4cb238f12b6b411fb8ebd767c7191ceef91) |
+| `MockConfidentialUSD` deploy | `0xb6B08dC3014D944231E01Ad5a0292Efeea859112` | [0xda9a303a7b466d24d0ffc256854f476b3c7bf9e07f43f3c7638d0e7bbe36d6ed](https://sepolia.etherscan.io/tx/0xda9a303a7b466d24d0ffc256854f476b3c7bf9e07f43f3c7638d0e7bbe36d6ed) |
+| `DividendDistributor` deploy | `0x42C8c19fbC1E2F5649d540237759E7bFee5617b9` | [0x4ccaca6e3ca5dbb40b4f2bb3b5bb1709ab7263ce0faf3ae52a9b05038ffb71a2](https://sepolia.etherscan.io/tx/0x4ccaca6e3ca5dbb40b4f2bb3b5bb1709ab7263ce0faf3ae52a9b05038ffb71a2) |
+| `CharterResolutions` deploy  | `0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3` | [0x1c654e201f2049f20a145ddaef8f1c279a45c22775fe2a63951af64a6fb0930f](https://sepolia.etherscan.io/tx/0x1c654e201f2049f20a145ddaef8f1c279a45c22775fe2a63951af64a6fb0930f) |
+| `DemoShareFaucet` deploy     | `0x9AF5A8e7d036E4347D0458748D9bC27131D0710C` | [0x380805c9611b1be137cf07369f68fd09f653ff3e01853c04744f8ef1be0c63fb](https://sepolia.etherscan.io/tx/0x380805c9611b1be137cf07369f68fd09f653ff3e01853c04744f8ef1be0c63fb) |
+| Register distributor module  | `0x42C8c19fbC1E2F5649d540237759E7bFee5617b9` | [0x31137dadb8d5af5da34a04b90b18fd60c7b587c0669bfb946cd0cf12d14b555a](https://sepolia.etherscan.io/tx/0x31137dadb8d5af5da34a04b90b18fd60c7b587c0669bfb946cd0cf12d14b555a) |
+| Register resolutions module  | `0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3` | [0xf2ea06c02380573bfa83211ab15aa9755bdb14e538bed992653336ecec3418c6](https://sepolia.etherscan.io/tx/0xf2ea06c02380573bfa83211ab15aa9755bdb14e538bed992653336ecec3418c6) |
+| Add deployer agent role      | `0x04045Ca68BEF611adBD76e58C028cEFf4a3d640D` | [0xd390c6e18675d5fed6bcd8dd7357610000797523ad9793bfeb84e6cdc2307d1c](https://sepolia.etherscan.io/tx/0xd390c6e18675d5fed6bcd8dd7357610000797523ad9793bfeb84e6cdc2307d1c) |
+| Add faucet agent role        | `0x9AF5A8e7d036E4347D0458748D9bC27131D0710C` | [0xe5065f92eae112535bd7611ad59acf99b8e8d9e0877d9534caa2db8f4242eb56](https://sepolia.etherscan.io/tx/0xe5065f92eae112535bd7611ad59acf99b8e8d9e0877d9534caa2db8f4242eb56) |
 
 ## Verification
 
-| Contract              | Sourcify                                                                                                                | Etherscan                               |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| `CharterShares`       | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x6E823303Ff9416Fa500915A5D56b32e2c3158e45/) | Skipped: `ETHERSCAN_API_KEY` is not set |
-| `MockConfidentialUSD` | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xee3B37E13e4833969050Ae6D34311E4E3eD0396a/) | Skipped: `ETHERSCAN_API_KEY` is not set |
-| `DividendDistributor` | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x33274e28cA4f04D5177c388517904f73F94CAd99/) | Skipped: `ETHERSCAN_API_KEY` is not set |
-| `CharterResolutions`  | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x083E64CC897dD33a7616E30400c1620b9E5DAcD1/) | Skipped: `ETHERSCAN_API_KEY` is not set |
+| Target    | Result                                                                             |
+| --------- | ---------------------------------------------------------------------------------- |
+| Etherscan | Verified all five redeployed contracts on 2026-07-03.                              |
+| Sourcify  | Not completed; Etherscan source verification is the published verification target. |
 
-## Frontend wiring
+## Frontend Wiring
 
-- `npm run export:addresses` wrote `web/.env.local`.
-- `cd web && npm run build` passed after one transient Next build-worker exit; `npx tsc --noEmit` and `npx eslint .`
-  were clean with the same env, and the rerun built all five routes.
-- Exported routes confirmed: `/`, `/issuer`, `/investor`, `/governance`, `/auditor`.
+- `npm run export:addresses` wrote new public addresses to `web/.env.local`.
+- `cd web && npm run build` passed after stopping the local screenshot server that was holding `web/out` open.
+- `npx tsc --noEmit` and `npx eslint .` passed in `web/`.
+- Screenshots were refreshed in `docs/img/`.
 
-## Demo investor funding
-
-Both demo investor wallets started at `0 ETH`. Each received one 0.03 ETH transfer.
-
-| Recipient  | Tx                                                                                                                                                                       |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Investor 1 | [0x7660042d083a1b9faa56d59d025bdcd27d99e2f63f6c5e80b3e6f8bdc992723c](https://sepolia.etherscan.io/tx/0x7660042d083a1b9faa56d59d025bdcd27d99e2f63f6c5e80b3e6f8bdc992723c) |
-| Investor 2 | [0x523ce0f3def4c77cd3859ed659cb9f21b634391500681165ee9dc9a89e4e7fa0](https://sepolia.etherscan.io/tx/0x523ce0f3def4c77cd3859ed659cb9f21b634391500681165ee9dc9a89e4e7fa0) |
-
-## Lifecycle e2e
+## Lifecycle E2E
 
 Initial `scenario:status`: `totalSharesOnRecord=0`, `paused=false`, `distributionCount=0`, `resolutionCount=0`.
 
-| Step                            | Expected / observed value                                    | Tx                                                                                                                                                                       |
-| ------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Issue investor 1                | 500000 encrypted shares                                      | [0x005b7b52d32bf167269faab2099e7118ce53c28a260429fbc3a65bd7fb44a0b1](https://sepolia.etherscan.io/tx/0x005b7b52d32bf167269faab2099e7118ce53c28a260429fbc3a65bd7fb44a0b1) |
-| Issue investor 2                | 300000 encrypted shares                                      | [0x543feb0d9bfa4b61fcea0c86392cf9a132f19993a583cc6ed3741c4b79dcb99e](https://sepolia.etherscan.io/tx/0x543feb0d9bfa4b61fcea0c86392cf9a132f19993a583cc6ed3741c4b79dcb99e) |
-| Request supply disclosure       | Total supply handle requested                                | [0xfbc9214022839aa52ccb792fac542fbde8073347aa2e3a4980aa11ba50bb01d1](https://sepolia.etherscan.io/tx/0xfbc9214022839aa52ccb792fac542fbde8073347aa2e3a4980aa11ba50bb01d1) |
-| Finalize supply disclosure      | Observed `800000` shares                                     | [0x8e7eda2a113e9505bfdb55d483db1cfd44fc051436f89fdc94563f3a7225471d](https://sepolia.etherscan.io/tx/0x8e7eda2a113e9505bfdb55d483db1cfd44fc051436f89fdc94563f3a7225471d) |
-| Delegate investor 1             | Self-delegated                                               | [0xfd1c42799faf25689bad78a01cb4783606f8f58cf3a35db772ec6de3afe95fdc](https://sepolia.etherscan.io/tx/0xfd1c42799faf25689bad78a01cb4783606f8f58cf3a35db772ec6de3afe95fdc) |
-| Delegate investor 2             | Self-delegated                                               | [0x4e7ffe84c75650ee4470623067866767acdb947ae9676a6b381634b5a0329076](https://sepolia.etherscan.io/tx/0x4e7ffe84c75650ee4470623067866767acdb947ae9676a6b381634b5a0329076) |
-| Mint mcUSD                      | 10000 mcUSD to deployer                                      | [0x17d8ff2fd1bb0f82b3fab78f9cbdbf7dd392709949b18b687576a4a54020817e](https://sepolia.etherscan.io/tx/0x17d8ff2fd1bb0f82b3fab78f9cbdbf7dd392709949b18b687576a4a54020817e) |
-| Approve distributor as operator | Operator until 1783102874                                    | [0x158c9a0c6aeb79d53a04c292e8d2b2a1133007892c9b190847e934713198d4bb](https://sepolia.etherscan.io/tx/0x158c9a0c6aeb79d53a04c292e8d2b2a1133007892c9b190847e934713198d4bb) |
-| Declare distribution            | Distribution id `0`, pool 10000 mcUSD                        | [0x1a4f18d7e5e44e61791ecae1ed827c561ba4c5ac645e5716538d400061593c7a](https://sepolia.etherscan.io/tx/0x1a4f18d7e5e44e61791ecae1ed827c561ba4c5ac645e5716538d400061593c7a) |
-| Pause shares                    | Record date set                                              | [0x7c1034f74f112f79c504f785382de5af7d5cc92cb5646dbca1e3fd8ddb4674c3](https://sepolia.etherscan.io/tx/0x7c1034f74f112f79c504f785382de5af7d5cc92cb5646dbca1e3fd8ddb4674c3) |
-| Pay batch                       | Investors 1 and 2 paid                                       | [0xadb7d4d3f0bb4595010ef95619055fae8876c767567614ff505da0446e15ce7b](https://sepolia.etherscan.io/tx/0xadb7d4d3f0bb4595010ef95619055fae8876c767567614ff505da0446e15ce7b) |
-| Unpause shares                  | Transfers live again                                         | [0xb771d38eaf650d44717c198c11ff34cf3aace5b893547b6b2ced58a744ed5b83](https://sepolia.etherscan.io/tx/0xb771d38eaf650d44717c198c11ff34cf3aace5b893547b6b2ced58a744ed5b83) |
-| Propose resolution              | Resolution id `0`, 40-block window                           | [0x89bbdb5e491306ef42308e19d37d4912694fc09d42fc42571f602b47c1b8e400](https://sepolia.etherscan.io/tx/0x89bbdb5e491306ef42308e19d37d4912694fc09d42fc42571f602b47c1b8e400) |
-| Vote investor 1                 | FOR                                                          | [0xb044f9a946cb3ca32575405c2e0a7e543ce08ce4610b000a0a237a08be0e059d](https://sepolia.etherscan.io/tx/0xb044f9a946cb3ca32575405c2e0a7e543ce08ce4610b000a0a237a08be0e059d) |
-| Vote investor 2                 | AGAINST                                                      | [0xaab72441218fbd051b3377d4ddf95ddee51a70df35b101cc931050bd83c132a3](https://sepolia.etherscan.io/tx/0xaab72441218fbd051b3377d4ddf95ddee51a70df35b101cc931050bd83c132a3) |
-| Request tally                   | Voting deadline `11188845`, requested after block `11188847` | [0x16a02db024b570392616e99fd1f8ed2fc17ebaba8e4021b93d1e0804ddd64cd0](https://sepolia.etherscan.io/tx/0x16a02db024b570392616e99fd1f8ed2fc17ebaba8e4021b93d1e0804ddd64cd0) |
-| Settle resolution               | Observed `500000 FOR / 300000 AGAINST`, passed               | [0x03826050a07f672f72de37bb7422161d338998620ee9fd470c5215d3489a8df1](https://sepolia.etherscan.io/tx/0x03826050a07f672f72de37bb7422161d338998620ee9fd470c5215d3489a8df1) |
+| Step                            | Expected / observed value                                                      | Tx                                                                                                                                                                       |
+| ------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Issue deployer                  | 500000 encrypted shares                                                        | [0xfb04f5846d6f8dbf98d7179ee300438127d81cd74f43a8b59a1910ca086f3a4e](https://sepolia.etherscan.io/tx/0xfb04f5846d6f8dbf98d7179ee300438127d81cd74f43a8b59a1910ca086f3a4e) |
+| Issue voter 1                   | 300000 encrypted shares                                                        | [0xddbea70e69ca8cb752facdc2d37112f4c5d96f0d07b86a1ec4d900a2c83e063d](https://sepolia.etherscan.io/tx/0xddbea70e69ca8cb752facdc2d37112f4c5d96f0d07b86a1ec4d900a2c83e063d) |
+| Issue voter 2                   | 200000 encrypted shares                                                        | [0x961eef57fa025d71b609e814783a9adf31e17a7a62df0d62f09f48dc9f178e29](https://sepolia.etherscan.io/tx/0x961eef57fa025d71b609e814783a9adf31e17a7a62df0d62f09f48dc9f178e29) |
+| Request supply disclosure       | Total supply handle requested                                                  | [0x93b8232280ecd83cd78e7db00a87dd69b5c3c2f231a6470bdc196d3a2d4f22d7](https://sepolia.etherscan.io/tx/0x93b8232280ecd83cd78e7db00a87dd69b5c3c2f231a6470bdc196d3a2d4f22d7) |
+| Finalize supply disclosure      | Observed `1,000,000` shares                                                    | [0xb3b02952fcf643877e07d633aaac01ba42dc036165b2ce1a5398bba6883fa33b](https://sepolia.etherscan.io/tx/0xb3b02952fcf643877e07d633aaac01ba42dc036165b2ce1a5398bba6883fa33b) |
+| Delegate deployer               | Self-delegated                                                                 | [0x2389a936a122d70d1792471c17810d251ac804cc030f78c1273ddf83750af8ac](https://sepolia.etherscan.io/tx/0x2389a936a122d70d1792471c17810d251ac804cc030f78c1273ddf83750af8ac) |
+| Delegate voter 1                | Self-delegated                                                                 | [0x074dba1e6b77c974dd98e8d3875b9fd526cf894ad0a14cece251e32912fc62bb](https://sepolia.etherscan.io/tx/0x074dba1e6b77c974dd98e8d3875b9fd526cf894ad0a14cece251e32912fc62bb) |
+| Delegate voter 2                | Self-delegated                                                                 | [0xbb576b297afc8e0024351cf7b56ac79a989534a8ece11dff6430c7e5e83fee18](https://sepolia.etherscan.io/tx/0xbb576b297afc8e0024351cf7b56ac79a989534a8ece11dff6430c7e5e83fee18) |
+| Mint mcUSD                      | 1000 mcUSD to deployer                                                         | [0xc81a584a67e1f84c92261d029b506d4af8a6b464730a80976ece25a2ba9a9266](https://sepolia.etherscan.io/tx/0xc81a584a67e1f84c92261d029b506d4af8a6b464730a80976ece25a2ba9a9266) |
+| Approve distributor as operator | Operator until 1783170827                                                      | [0xbd5dbd6f266820b43f72dba0f4bdf3056f5ba126e3dc6876941dd6a42742aaa6](https://sepolia.etherscan.io/tx/0xbd5dbd6f266820b43f72dba0f4bdf3056f5ba126e3dc6876941dd6a42742aaa6) |
+| Pause shares                    | Pause is the dividend record date                                              | [0xd57739d29b6a45ba90217529087b6c815133d335480b9de54480de36f1a0c4ac](https://sepolia.etherscan.io/tx/0xd57739d29b6a45ba90217529087b6c815133d335480b9de54480de36f1a0c4ac) |
+| Declare distribution            | Distribution id `0`, pool 1000 mcUSD                                           | [0x2da70170e86f441d76f9f8b7cc5b5f9fb1817e8f1fea6082e2899c1eadac124c](https://sepolia.etherscan.io/tx/0x2da70170e86f441d76f9f8b7cc5b5f9fb1817e8f1fea6082e2899c1eadac124c) |
+| Pay batch                       | Three holders paid                                                             | [0x20e0bf66a26a85aab0769b0b4761de33111c3e79d7d2571cc6f1700474336859](https://sepolia.etherscan.io/tx/0x20e0bf66a26a85aab0769b0b4761de33111c3e79d7d2571cc6f1700474336859) |
+| Unpause shares                  | Transfers live again                                                           | [0xa61843401e3037e110154c8ff78dc6610e0e622276439049c3f4b8c330094546](https://sepolia.etherscan.io/tx/0xa61843401e3037e110154c8ff78dc6610e0e622276439049c3f4b8c330094546) |
+| Propose resolution 0            | Resolution id `0`, 40-block window                                             | [0xbcb10973c076ab0f560249917e46a0a037b82e705f390a336ff802bb59c2786b](https://sepolia.etherscan.io/tx/0xbcb10973c076ab0f560249917e46a0a037b82e705f390a336ff802bb59c2786b) |
+| Vote resolution 0, deployer     | FOR                                                                            | [0xecde4fc9f03fccbfaab0f3d549719ff117ad47881df0cfd7bc283c114f9bda18](https://sepolia.etherscan.io/tx/0xecde4fc9f03fccbfaab0f3d549719ff117ad47881df0cfd7bc283c114f9bda18) |
+| Vote resolution 0, voter 1      | AGAINST                                                                        | [0xfcefeefe6521b1df94d29656dd4feba22a8fff81aca3b9a54690a288a3e58703](https://sepolia.etherscan.io/tx/0xfcefeefe6521b1df94d29656dd4feba22a8fff81aca3b9a54690a288a3e58703) |
+| Vote resolution 0, voter 2      | FOR                                                                            | [0x7ffd2e1f74bd569e4041b5543ca6e93acb5fa8899cb3921ed8415e1354bcd143](https://sepolia.etherscan.io/tx/0x7ffd2e1f74bd569e4041b5543ca6e93acb5fa8899cb3921ed8415e1354bcd143) |
+| Request resolution 0 tally      | Deadline `11194471`, requested after block `11194472`                          | [0x82b4c58bfc40c473d32c5d533379fa40ed8676a033e6de6c1999f2e73e375f40](https://sepolia.etherscan.io/tx/0x82b4c58bfc40c473d32c5d533379fa40ed8676a033e6de6c1999f2e73e375f40) |
+| Settle resolution 0             | Observed only `passed`; exact for/against tallies were not disclosed           | [0x9fae760f3b251780702465da03fbc20418ce7d1d8557cd9f548f791125e07a62](https://sepolia.etherscan.io/tx/0x9fae760f3b251780702465da03fbc20418ce7d1d8557cd9f548f791125e07a62) |
+| Propose resolution 1            | Staged judge-triggered outcome reveal                                          | [0x8b0561f84180db8c2157124c82e4801630d91fa72fd0b2d0aaf02af02d76a5fc](https://sepolia.etherscan.io/tx/0x8b0561f84180db8c2157124c82e4801630d91fa72fd0b2d0aaf02af02d76a5fc) |
+| Vote resolution 1, deployer     | FOR                                                                            | [0xd4243713f56ce0580b232e8248745162efc7419c9b7d9c565b0bd6d059d02765](https://sepolia.etherscan.io/tx/0xd4243713f56ce0580b232e8248745162efc7419c9b7d9c565b0bd6d059d02765) |
+| Vote resolution 1, voter 1      | AGAINST                                                                        | [0x7d9d5f185c1a9b7506921f33bb8d9ab059a23ebf96cd16f315ba2557d058467b](https://sepolia.etherscan.io/tx/0x7d9d5f185c1a9b7506921f33bb8d9ab059a23ebf96cd16f315ba2557d058467b) |
+| Vote resolution 1, voter 2      | FOR                                                                            | [0xbc0be6e2bac8473a6dbcc08cf35cf6c413fcafd77c8c86e6dee3d92bd2418429](https://sepolia.etherscan.io/tx/0xbc0be6e2bac8473a6dbcc08cf35cf6c413fcafd77c8c86e6dee3d92bd2418429) |
+| Request resolution 1 tally      | Deadline `11194517`, tally requested and left unresolved for the governance UI | [0x968fbe4468311e27d9d374afcf64f456629cfca3131af8ae979397226b5b58b9](https://sepolia.etherscan.io/tx/0x968fbe4468311e27d9d374afcf64f456629cfca3131af8ae979397226b5b58b9) |
 
-Final `scenario:status`: `totalSharesOnRecord=800000`, `paused=false`, `distributionCount=1`, `resolutionCount=1`,
-`resolved=true`, `passed=true`, `tallyRequested=true`.
+Final `scenario:status`: `totalSharesOnRecord=1000000`, `paused=false`, `distributionCount=1`, `resolutionCount=2`.
+Resolution 0 is `resolved=true`, `passed=true`, `tallyRequested=true`. Resolution 1 is `resolved=false`, `passed=false`,
+`tallyRequested=true`, ready for a judge-triggered final settle.

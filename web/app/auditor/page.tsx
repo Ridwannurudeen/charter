@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { AppShell, ConnectGate } from "@/components/AppShell";
 import { EncryptedValue } from "@/components/EncryptedValue";
-import { Badge, Button, Callout, Card, Field, Input, shortAddress } from "@/components/ui";
+import { Badge, Button, Callout, Card, Field, Input, errorText, shortAddress } from "@/components/ui";
 import { ADDRESSES, CONTRACTS_CONFIGURED } from "@/lib/contracts";
 import { useWallet } from "@/lib/wallet";
 
@@ -85,8 +85,9 @@ function AuditorConsole() {
         }),
       );
       setRows(nextRows);
-    } catch {
-      setError("Could not refresh auditor portfolio.");
+      setError(null);
+    } catch (e) {
+      setError(`Could not refresh auditor portfolio: ${errorText(e)}`);
     } finally {
       setLoadingPortfolio(false);
     }
@@ -104,7 +105,7 @@ function AuditorConsole() {
     try {
       await fn();
     } catch (e) {
-      setError(`${label} failed: ${(e as Error)?.message?.slice(0, 160) ?? "unknown error"}`);
+      setError(`${label} failed: ${errorText(e)}`);
     }
   };
 
@@ -143,8 +144,8 @@ function AuditorConsole() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Auditor view</h1>
         <p className="mt-1 text-sm text-muted">
-          Holders appoint you as observer; you decrypt exactly what they granted - their share positions. Nothing else,
-          nobody else.
+          Holders appoint you as observer; you decrypt exactly what they granted - their share balances and transfer
+          amounts. Nothing else, nobody else.
         </p>
       </div>
 

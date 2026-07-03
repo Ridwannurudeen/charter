@@ -23,12 +23,10 @@ const config: HardhatUserConfig = {
     deployer: 0,
   },
   etherscan: {
-    apiKey: {
-      sepolia: vars.get("ETHERSCAN_API_KEY", ""),
-    },
+    apiKey: vars.get("ETHERSCAN_API_KEY", ""),
   },
   sourcify: {
-    enabled: true,
+    enabled: process.env.DISABLE_SOURCIFY !== "1",
   },
   gasReporter: {
     currency: "USD",

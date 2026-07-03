@@ -9,8 +9,8 @@ import {CharterShares} from "./CharterShares.sol";
 /// @notice Shareholders vote on resolutions with power equal to their checkpointed
 /// encrypted holdings at the resolution's snapshot. Both the direction of each vote
 /// (encrypted ebool) and its weight (encrypted balance) stay confidential; only the
-/// aggregate for/against tallies are disclosed after the deadline, with a KMS proof
-/// verified on-chain.
+/// pass/fail outcome is disclosed after the deadline, with a KMS proof verified
+/// on-chain.
 ///
 /// Shareholders must self-delegate on the share token before the snapshot to activate
 /// their voting checkpoints (standard Votes semantics).
@@ -21,10 +21,9 @@ contract CharterResolutions is ZamaEthereumConfig {
         uint48 deadline;
         euint64 forVotes;
         euint64 againstVotes;
+        ebool passedHandle;
         bool tallyRequested;
         bool resolved;
-        uint64 forClear;
-        uint64 againstClear;
         bool passed;
     }
 
@@ -34,9 +33,9 @@ contract CharterResolutions is ZamaEthereumConfig {
     mapping(uint256 resolutionId => mapping(address voter => bool)) public hasVoted;
 
     event ResolutionProposed(uint256 indexed id, string description, uint48 snapshot, uint48 deadline);
-    event VoteCast(uint256 indexed id, address indexed voter);
+    event VoteCast(uint256 indexed id, address voter);
     event TallyRequested(uint256 indexed id);
-    event ResolutionSettled(uint256 indexed id, uint64 forVotes, uint64 againstVotes, bool passed);
+    event ResolutionSettled(uint256 indexed id, bool passed);
 
     error ResolutionsNotIssuer(address caller);
     error ResolutionsVotingClosed(uint256 id);
@@ -109,32 +108,31 @@ contract CharterResolutions is ZamaEthereumConfig {
         emit VoteCast(id, msg.sender);
     }
 
-    /// @notice Makes the final tallies publicly decryptable after the deadline.
+    /// @notice Makes the pass/fail outcome publicly decryptable after the deadline.
     function requestTally(uint256 id) external {
         Resolution storage r = _resolutions[id];
         require(SHARES.clock() > r.deadline, ResolutionsVotingNotEnded(id));
-        FHE.makePubliclyDecryptable(r.forVotes);
-        FHE.makePubliclyDecryptable(r.againstVotes);
+        ebool passedEnc = FHE.gt(r.forVotes, r.againstVotes);
+        FHE.allowThis(passedEnc);
+        FHE.makePubliclyDecryptable(passedEnc);
+        r.passedHandle = passedEnc;
         r.tallyRequested = true;
         emit TallyRequested(id);
     }
 
-    /// @notice Settles the resolution with the decrypted tallies and their KMS proof.
+    /// @notice Settles the resolution with the decrypted outcome and its KMS proof.
     /// Anyone may relay; forged cleartexts revert in {FHE.checkSignatures}.
-    function settle(uint256 id, uint64 forClear, uint64 againstClear, bytes calldata decryptionProof) external {
+    function settle(uint256 id, bool passedClear, bytes calldata decryptionProof) external {
         Resolution storage r = _resolutions[id];
         require(r.tallyRequested, ResolutionsNoTallyRequested(id));
         require(!r.resolved, ResolutionsAlreadyResolved(id));
 
-        bytes32[] memory handles = new bytes32[](2);
-        handles[0] = euint64.unwrap(r.forVotes);
-        handles[1] = euint64.unwrap(r.againstVotes);
-        FHE.checkSignatures(handles, abi.encode(forClear, againstClear), decryptionProof);
+        bytes32[] memory handles = new bytes32[](1);
+        handles[0] = ebool.unwrap(r.passedHandle);
+        FHE.checkSignatures(handles, abi.encode(passedClear), decryptionProof);
 
-        r.forClear = forClear;
-        r.againstClear = againstClear;
-        r.passed = forClear > againstClear;
+        r.passed = passedClear;
         r.resolved = true;
-        emit ResolutionSettled(id, forClear, againstClear, r.passed);
+        emit ResolutionSettled(id, passedClear);
     }
 }

@@ -1,4 +1,7 @@
-# Charter web
+# Charter Web
 
-Next.js static frontend for Charter. See [../README.md](../README.md) for architecture, contracts, and scenario tasks.
-Run `cd web && npm i && npm run dev`.
+Static Next.js frontend for Charter.
+
+See [../README.md](../README.md) for architecture, contracts, constraints, and scenario tasks.
+
+Run locally with `cd web && npm i && npm run dev`.

@@ -6,6 +6,7 @@ export const ADDRESSES = {
   mcUSD: process.env.NEXT_PUBLIC_MCUSD_ADDRESS ?? ZERO_ADDRESS,
   distributor: process.env.NEXT_PUBLIC_DISTRIBUTOR_ADDRESS ?? ZERO_ADDRESS,
   resolutions: process.env.NEXT_PUBLIC_RESOLUTIONS_ADDRESS ?? ZERO_ADDRESS,
+  demoFaucet: process.env.NEXT_PUBLIC_DEMO_FAUCET_ADDRESS ?? ZERO_ADDRESS,
 } as const;
 
 export const CONTRACTS_CONFIGURED = ADDRESSES.shares !== ZERO_ADDRESS;
@@ -17,6 +18,7 @@ export const SHARES_ABI = [
   "function confidentialTotalSupply() view returns (bytes32)",
   "function totalSharesOnRecord() view returns (uint64)",
   "function recordTimepoint() view returns (uint48)",
+  "function supplyDisclosureStale() view returns (bool)",
   "function isAdmin(address) view returns (bool)",
   "function isAgent(address) view returns (bool)",
   "function paused() view returns (bool)",
@@ -47,6 +49,12 @@ export const MCUSD_ABI = [
   "function isOperator(address holder, address spender) view returns (bool)",
 ] as const;
 
+export const DEMO_FAUCET_ABI = [
+  "function GRANT() view returns (uint64)",
+  "function claimed(address account) view returns (bool)",
+  "function claim()",
+] as const;
+
 export const DISTRIBUTOR_ABI = [
   "function distributionCount() view returns (uint256)",
   "function getDistribution(uint256 id) view returns (tuple(address token, uint64 pool, uint64 totalShares, uint48 declaredAt))",
@@ -58,12 +66,12 @@ export const DISTRIBUTOR_ABI = [
 
 export const RESOLUTIONS_ABI = [
   "function resolutionCount() view returns (uint256)",
-  "function getResolution(uint256 id) view returns (tuple(string description, uint48 snapshot, uint48 deadline, bytes32 forVotes, bytes32 againstVotes, bool tallyRequested, bool resolved, uint64 forClear, uint64 againstClear, bool passed))",
+  "function getResolution(uint256 id) view returns (tuple(string description, uint48 snapshot, uint48 deadline, bytes32 forVotes, bytes32 againstVotes, bytes32 passedHandle, bool tallyRequested, bool resolved, bool passed))",
   "function hasVoted(uint256 id, address voter) view returns (bool)",
   "function propose(string description, uint48 votingPeriod) returns (uint256)",
   "function castVote(uint256 id, bytes32 encryptedSupport, bytes inputProof)",
   "function requestTally(uint256 id)",
-  "function settle(uint256 id, uint64 forClear, uint64 againstClear, bytes decryptionProof)",
+  "function settle(uint256 id, bool passedClear, bytes decryptionProof)",
 ] as const;
 
 export const ZERO_HANDLE = ("0x" + "0".repeat(64)) as `0x${string}`;

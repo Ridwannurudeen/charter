@@ -6,6 +6,7 @@ const ARTIFACTS = [
   ["MockConfidentialUSD", "NEXT_PUBLIC_MCUSD_ADDRESS"],
   ["DividendDistributor", "NEXT_PUBLIC_DISTRIBUTOR_ADDRESS"],
   ["CharterResolutions", "NEXT_PUBLIC_RESOLUTIONS_ADDRESS"],
+  ["DemoShareFaucet", "NEXT_PUBLIC_DEMO_FAUCET_ADDRESS"],
 ] as const;
 
 type DeploymentArtifact = {

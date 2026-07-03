@@ -3,7 +3,15 @@
 import { BrowserProvider, Contract, Eip1193Provider, JsonRpcSigner } from "ethers";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import { ADDRESSES, DISTRIBUTOR_ABI, MCUSD_ABI, RESOLUTIONS_ABI, SEPOLIA_CHAIN_ID, SHARES_ABI } from "./contracts";
+import {
+  ADDRESSES,
+  DEMO_FAUCET_ABI,
+  DISTRIBUTOR_ABI,
+  MCUSD_ABI,
+  RESOLUTIONS_ABI,
+  SEPOLIA_CHAIN_ID,
+  SHARES_ABI,
+} from "./contracts";
 
 type WalletState = {
   address: string | null;
@@ -12,6 +20,7 @@ type WalletState = {
   connect: () => Promise<void>;
   eip1193: Eip1193Provider | null;
   signer: JsonRpcSigner | null;
+  demoFaucet: Contract | null;
   shares: Contract | null;
   mcUSD: Contract | null;
   distributor: Contract | null;
@@ -102,6 +111,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     () => (signer && onSepolia ? new Contract(ADDRESSES.resolutions, RESOLUTIONS_ABI, signer) : null),
     [signer, onSepolia],
   );
+  const demoFaucet = useMemo(
+    () => (signer && onSepolia ? new Contract(ADDRESSES.demoFaucet, DEMO_FAUCET_ABI, signer) : null),
+    [signer, onSepolia],
+  );
 
   const refreshRoles = useCallback(async () => {
     if (!shares || !address) {
@@ -133,6 +146,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       connect,
       eip1193,
       signer,
+      demoFaucet,
       shares,
       mcUSD,
       distributor,
@@ -148,6 +162,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       connect,
       eip1193,
       signer,
+      demoFaucet,
       shares,
       mcUSD,
       distributor,

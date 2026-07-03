@@ -8,6 +8,8 @@ import {
   CharterResolutions__factory,
   CharterShares,
   CharterShares__factory,
+  DemoShareFaucet,
+  DemoShareFaucet__factory,
   DividendDistributor,
   DividendDistributor__factory,
   MockConfidentialUSD,
@@ -21,11 +23,13 @@ type Signers = {
   carol: HardhatEthersSigner;
   dave: HardhatEthersSigner;
   auditor: HardhatEthersSigner;
+  erin: HardhatEthersSigner;
 };
 
 const ALICE_SHARES = 500_000;
 const BOB_SHARES = 300_000;
 const CAROL_SHARES = 200_000;
+const AUDITOR_EXTRA_SHARES = 1_000;
 const TOTAL_SHARES = ALICE_SHARES + BOB_SHARES + CAROL_SHARES;
 const POOL = 10_000_000_000n; // 10,000 mcUSD (6 decimals)
 
@@ -39,6 +43,8 @@ describe("Charter", function () {
   let distributorAddress: string;
   let resolutions: CharterResolutions;
   let resolutionsAddress: string;
+  let demoFaucet: DemoShareFaucet;
+  let demoFaucetAddress: string;
 
   before(async function () {
     if (!fhevm.isMock) {
@@ -53,6 +59,7 @@ describe("Charter", function () {
       carol: ethSigners[3],
       dave: ethSigners[4],
       auditor: ethSigners[5],
+      erin: ethSigners[6],
     };
 
     shares = await ((await ethers.getContractFactory("CharterShares")) as CharterShares__factory).deploy(
@@ -76,9 +83,15 @@ describe("Charter", function () {
     );
     resolutionsAddress = await resolutions.getAddress();
 
+    demoFaucet = await ((await ethers.getContractFactory("DemoShareFaucet")) as DemoShareFaucet__factory).deploy(
+      sharesAddress,
+    );
+    demoFaucetAddress = await demoFaucet.getAddress();
+
     await (await shares.setModule(distributorAddress, true)).wait();
     await (await shares.setModule(resolutionsAddress, true)).wait();
     await (await shares.addAgent(signers.issuer.address)).wait();
+    await (await shares.addAgent(demoFaucetAddress)).wait();
   });
 
   async function mintShares(to: HardhatEthersSigner, amount: number) {
@@ -156,11 +169,22 @@ describe("Charter", function () {
   });
 
   describe("distributions", function () {
-    it("issuer funds treasury and declares a distribution", async function () {
+    it("issuer funds treasury and approves the distributor", async function () {
       await (await mcUSD.mint(signers.issuer.address, 2n * POOL)).wait();
       const until = (await ethers.provider.getBlock("latest"))!.timestamp + 1_000_000;
       await (await mcUSD.connect(signers.issuer).setOperator(distributorAddress, until)).wait();
+      expect(await mcUSD.isOperator(signers.issuer.address, distributorAddress)).to.eq(true);
+    });
 
+    it("requires shares to be paused before declaring a distribution", async function () {
+      await expect(distributor.declare(mcUSDAddress, POOL)).to.be.revertedWithCustomError(
+        distributor,
+        "DistributorSharesNotPaused",
+      );
+    });
+
+    it("issuer declares a distribution at the record-date pause", async function () {
+      await (await shares.pause()).wait();
       await (await distributor.declare(mcUSDAddress, POOL)).wait();
       const d = await distributor.getDistribution(0);
       expect(d.pool).to.eq(POOL);
@@ -168,6 +192,7 @@ describe("Charter", function () {
     });
 
     it("refuses to pay while share transfers are live (no record date)", async function () {
+      await (await shares.unpause()).wait();
       await expect(distributor.payBatch(0, [signers.alice.address])).to.be.revertedWithCustomError(
         distributor,
         "DistributorSharesNotPaused",
@@ -198,6 +223,27 @@ describe("Charter", function () {
         distributor,
         "DistributorNotIssuer",
       );
+    });
+
+    it("rejects a stale disclosed supply after new issuance", async function () {
+      await mintShares(signers.auditor, AUDITOR_EXTRA_SHARES);
+      expect(await shares.supplyDisclosureStale()).to.eq(true);
+
+      await (await shares.pause()).wait();
+      await expect(distributor.declare(mcUSDAddress, 1n)).to.be.revertedWithCustomError(
+        distributor,
+        "DistributorStaleSupply",
+      );
+      await (await shares.unpause()).wait();
+
+      await (await shares.requestSupplyDisclosure()).wait();
+      const supplyHandle = await shares.confidentialTotalSupply();
+      const result = await fhevm.publicDecrypt([supplyHandle]);
+      const clearSupply = result.clearValues[supplyHandle as `0x${string}`] as bigint;
+      expect(clearSupply).to.eq(TOTAL_SHARES + AUDITOR_EXTRA_SHARES);
+
+      await (await shares.finalizeSupplyDisclosure(clearSupply, result.decryptionProof)).wait();
+      expect(await shares.supplyDisclosureStale()).to.eq(false);
     });
   });
 
@@ -237,19 +283,19 @@ describe("Charter", function () {
       ).to.be.revertedWithCustomError(resolutions, "ResolutionsNoVotingPower");
     });
 
-    it("settles with publicly proven tallies after the deadline", async function () {
+    it("settles with a publicly proven outcome after the deadline", async function () {
       await network.provider.send("hardhat_mine", ["0x80"]); // past the 100-block deadline
 
       await (await resolutions.requestTally(resolutionId)).wait();
       const r = await resolutions.getResolution(resolutionId);
-      const result = await fhevm.publicDecrypt([r.forVotes, r.againstVotes]);
-      const forClear = result.clearValues[r.forVotes as `0x${string}`] as bigint;
-      const againstClear = result.clearValues[r.againstVotes as `0x${string}`] as bigint;
+      await expect(fhevm.publicDecrypt([r.forVotes])).to.be.rejected;
+      await expect(fhevm.publicDecrypt([r.againstVotes])).to.be.rejected;
 
-      expect(forClear).to.eq(ALICE_SHARES + CAROL_SHARES);
-      expect(againstClear).to.eq(BOB_SHARES);
+      const result = await fhevm.publicDecrypt([r.passedHandle]);
+      const passed = result.clearValues[r.passedHandle as `0x${string}`] as boolean;
+      expect(passed).to.eq(true);
 
-      await (await resolutions.settle(resolutionId, forClear, againstClear, result.decryptionProof)).wait();
+      await (await resolutions.settle(resolutionId, passed, result.decryptionProof)).wait();
       const settled = await resolutions.getResolution(resolutionId);
       expect(settled.resolved).to.eq(true);
       expect(settled.passed).to.eq(true);
@@ -299,6 +345,17 @@ describe("Charter", function () {
       await expect(shares.connect(signers.bob).allowBalanceAccess(signers.alice.address)).to.be.revertedWithCustomError(
         shares,
         "CharterNotModule",
+      );
+    });
+  });
+
+  describe("demo share faucet", function () {
+    it("lets a wallet claim encrypted demo shares once", async function () {
+      await (await demoFaucet.connect(signers.erin).claim()).wait();
+      expect(await decryptSharesOf(signers.erin)).to.eq(1000);
+      await expect(demoFaucet.connect(signers.erin).claim()).to.be.revertedWithCustomError(
+        demoFaucet,
+        "AlreadyClaimed",
       );
     });
   });

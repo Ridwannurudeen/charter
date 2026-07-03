@@ -1,18 +1,27 @@
 # Charter
 
-Charter is a confidential cap-table registry for private-company equity on Ethereum Sepolia. Shares are ERC-7984
-confidential tokens: issuers can mint, disclose aggregate supply, distribute confidential payouts, run hidden-weight
-votes, and grant auditor view access without publishing individual positions. The operating line is simple: verifiable
-totals, hidden individuals.
+Charter is a confidential equity cap table with dividends and shareholder governance on Ethereum Sepolia. Shares are
+ERC-7984 confidential tokens: issuers can mint encrypted allocations, disclose proof-backed aggregate supply, distribute
+confidential payouts, run hidden-weight resolutions, and grant auditor view access without publishing balances, payouts,
+or voting weight.
+
+App URL: `https://charter.gudman.xyz`.
+
+## Screenshots
+
+![Charter landing](docs/img/charter-landing.png)
+
+![Investor portal entry](docs/img/charter-investor.png)
+
+![Governance entry](docs/img/charter-governance.png)
 
 ## Why Charter exists
 
-Public-chain cap tables leak the exact holdings, transfers, voting weight, and payout history of every investor.
-Traditional private-company cap tables solve privacy by becoming opaque silos, where enforcement, payouts, and audits
-depend on off-chain coordination. Private equity needs the opposite pairing: enforceable infrastructure with selective
-disclosure. Charter makes the registry public and programmable while keeping individual balances encrypted. The public
-can verify totals and outcomes; holders, appointed observers, and relayed proofs reveal only the data each flow
-requires.
+Public-chain cap tables leak the holdings, transfers, voting weight, and payout history of every investor. Traditional
+private-company cap tables preserve privacy by becoming opaque off-chain silos, where enforcement, payouts, and audits
+depend on coordination outside the chain. Private equity needs enforceable infrastructure with selective disclosure:
+public totals and proof-backed outcomes, private investor-level economics. Charter makes the registry programmable while
+keeping quantities encrypted.
 
 ## Architecture
 
@@ -28,103 +37,124 @@ Issuer / Investor / Auditor / Governance UI
 | ERC7984Votes       |                           | mcUSD payouts         |
 | ObserverAccess     |                           +-----------------------+
 +---------+----------+
-          |
-          | module ACL
+          | module ACL / agent grant
           v
 +--------------------+                           +-----------------------+
 | CharterResolutions |                           | MockConfidentialUSD   |
 | encrypted votes    | <-----------------------> | testnet ERC-7984 cash |
-| proven tallies     |        payouts            | token                 |
+| outcome proof      |        payouts            | token                 |
 +--------------------+                           +-----------------------+
+          ^
+          |
++--------------------+
+| DemoShareFaucet    |
+| one-time grants    |
++--------------------+
 ```
 
-The frontend never imports the relayer SDK directly outside `web/lib/fhevm.ts`. User decryptions use an EIP-712 session
-cached in `sessionStorage`; public disclosures use relayer/KMS output that the contracts verify with
+The frontend loads the relayer SDK only through `web/lib/fhevm.ts`. User decryptions use an EIP-712 session cached in
+`sessionStorage` for one day. Public disclosures use relayer/KMS output that the contracts verify with
 `FHE.checkSignatures`.
 
-## The four flows, precisely
+## Flows
 
-| Flow              | Contract path                                                                                      | What stays private                  | What becomes public                                             |
-| ----------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------- | --------------------------------------------------------------- |
-| Issuance          | `CharterShares.confidentialMint(address,bytes32,bytes)`                                            | Each minted allocation              | Holder address and encrypted handle                             |
-| Supply disclosure | `requestSupplyDisclosure()` -> relayer `publicDecrypt` -> `finalizeSupplyDisclosure(uint64,bytes)` | Individual balances                 | Total issued shares and proof-backed record block               |
-| Distributions     | `DividendDistributor.declare()` -> pause-as-record-date -> `payBatch()`                            | Each investor balance and payout    | Pool amount, distribution id, paid flag                         |
-| Resolutions       | self-delegate -> `propose()` -> encrypted `castVote()` -> `requestTally()` -> `settle()`           | Vote direction and weight per voter | Final for/against totals and pass/fail                          |
-| Observer access   | `setObserver(account, observer)` -> `/auditor` decrypts `confidentialBalanceOf(account)`           | Everyone else still sees ciphertext | Holder-chosen observer can decrypt that holder's share position |
+| Flow              | Contract path                                                                                      | What stays private                  | What becomes public                                                   |
+| ----------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------- | --------------------------------------------------------------------- |
+| Issuance          | `CharterShares.confidentialMint(address,bytes32,bytes)`                                            | Each minted allocation              | Holder address and encrypted handle                                   |
+| Supply disclosure | `requestSupplyDisclosure()` -> relayer `publicDecrypt` -> `finalizeSupplyDisclosure(uint64,bytes)` | Individual balances                 | Total issued shares, record block, and KMS proof verification         |
+| Distributions     | `pause()` -> `DividendDistributor.declare()` -> `payBatch()`                                       | Each investor balance and payout    | Pool amount, distribution id, batch investor addresses, and paid flag |
+| Resolutions       | self-delegate -> `propose()` -> encrypted `castVote()` -> `requestTally()` -> `settle(bool,bytes)` | Vote direction and weight per voter | Pass/fail outcome and which addresses voted                           |
+| Observer access   | `setObserver(account, observer)` -> `/auditor` decrypts `confidentialBalanceOf(account)`           | Everyone else still sees ciphertext | Holder-chosen observer can decrypt that holder's share balance        |
+| Self-serve demo   | `DemoShareFaucet.claim()` and `MockConfidentialUSD.faucet()`                                       | Claimed balances                    | Claim transaction and recipient address                               |
 
 Distribution math is computed over ciphertext: `encBalance * pool / totalSharesOnRecord`. The divisor is scalar and
-public; individual balances and payout handles remain encrypted. Resolution voting uses an encrypted `ebool` multiplied
-through the checkpointed `getPastVotes` weight, then settles only after public decryption of aggregate handles in
-`[forVotes, againstVotes]` order.
+public; individual balances and payout handles remain encrypted. Resolution voting uses an encrypted `ebool` and
+checkpointed `getPastVotes` weight, then discloses only the encrypted comparison result: pass or fail.
 
-## Design decisions and constraints
+## Design Decisions And Constraints
 
-- HCU budget drives batching. `payBatch` is designed for roughly 15 investors per transaction instead of one unbounded
-  settlement.
+- Only the pass/fail outcome of a resolution is disclosed. Individual vote weights and directions never leave
+  ciphertext. Voter participation is public.
+- Cap-table membership and participation are public; only quantities are encrypted.
+- Dividend record date is the pause that must be in place at `declare`. The contract enforces pause-before-declare.
+- Re-run supply disclosure after any issuance before declaring a distribution. `supplyDisclosureStale()` enforces this.
+- User-decryption plaintext is reconstructed in the browser. The relayer sees only ciphertext, but the Zama threshold
+  KMS committee performs the underlying decryption as part of the protocol. The issuer/agent inherently can decrypt
+  allocations it mints.
+- Observer removal is prospective only. Values already shared remain decryptable by the former observer.
+- `mcUSD` is an open-mint testnet mock with no value.
+- HCU budget drives batching. `payBatch` is designed for roughly 15 investors per transaction; this size is a
+  conservative estimate and is not yet benchmarked at that batch size.
 - `pool * totalShares <= 2^64` is enforced before distribution declaration so encrypted `euint64` payout math cannot
-  overflow.
+  overflow. With a fresh, non-stale supply disclosure, no holder balance can exceed the denominator.
 - Shares are whole units with `decimals() == 0`, matching private-company share ledgers.
 - Total shares are deliberately public after disclosure. Real cap tables can expose the count while keeping holder-level
   ownership and payouts private.
-- Pause-as-record-date is a practical demo tradeoff: payouts require `CharterShares.paused()` so balances cannot move
-  between batches. A checkpoint-based record-date module is the natural post-hackathon upgrade.
-- `CharterShares.isModule` is a trusted-module registry. Registered modules receive transient ACL grants for handles
-  they need to compute distributions or votes, and no more.
+- `sweep` is issuer-trusted and can return remaining confidential payment-token balance to a chosen address.
+- `CharterShares.isModule` is a trusted-module registry: a registered module can request ACL access to handles the token
+  contract holds; the shipped modules request only transient, per-transaction access to the balances and checkpoints
+  they compute on. Module registration is admin-only and is the trust boundary.
 
-## Security posture
+## Security Posture
 
-Charter builds on `@openzeppelin/confidential-contracts` v0.5.1. The installed package README identifies npm installs as
-audited releases, and the Charter dependency is pinned through `package-lock.json`. Inherited surfaces include
-`ERC7984Rwa` for admin/agent controls, restrictions, freezes, force transfers, and pause; `ERC7984Votes` for
+Charter builds on `@openzeppelin/confidential-contracts` v0.5.1 and `@fhevm/solidity` v0.11.1. Inherited surfaces
+include `ERC7984Rwa` for admin/agent controls, restrictions, freezes, force transfers, and pause; `ERC7984Votes` for
 checkpointed encrypted voting power; and `ERC7984ObserverAccess` for holder-appointed observers.
 
-The custom code adds the share-supply disclosure flow, the trusted module registry, the pro-rata distributor, the
-resolution module, and the testnet mcUSD token. Contracts are intentionally small and covered by the 20-test suite in
-`test/Charter.ts`.
+The custom code adds the supply disclosure flow, trusted module registry, pro-rata distributor, outcome-only resolution
+module, one-time demo share faucet, and testnet mcUSD token. The local FHEVM mock test suite currently covers issuance,
+disclosure, distributions, stale-supply rejection, outcome-only resolutions, observer access, compliance controls, and
+demo faucet claims.
 
-## Getting started
+## Getting Started
 
 ```bash
-git clone https://github.com/gudmanii/charter
+git clone https://github.com/Ridwannurudeen/charter
 cd charter
 npm i
 npx hardhat test
 cd web && npm i && npm run dev
 ```
 
-The local test suite runs against the FHEVM mock and currently covers issuance, disclosure, distributions, resolutions,
-observer access, and compliance controls.
+### Scenario Tasks
 
-### Scenario tasks
+| Task                                                                                                 | Purpose                                           |
+| ---------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `npx hardhat scenario:issue --network sepolia --to 0x... --amount 500000`                            | Mint encrypted shares to an investor              |
+| `npx hardhat scenario:claim-shares --network sepolia --signer 3`                                     | Claim one-time demo shares for a signer           |
+| `npx hardhat scenario:disclose --network sepolia`                                                    | Publicly disclose total supply with proof         |
+| `npx hardhat scenario:fund --network sepolia --amount 10000`                                         | Mint mcUSD to deployer and approve distributor    |
+| `npx hardhat scenario:declare --network sepolia --pool 10000`                                        | Pause if needed, then declare a distribution pool |
+| `npx hardhat scenario:pay --network sepolia --id 0 --investors 0x...,0x...`                          | Pay a paused distribution batch, then unpause     |
+| `npx hardhat scenario:delegate --network sepolia --signer 1`                                         | Self-delegate voting power for a signer           |
+| `npx hardhat scenario:propose --network sepolia --text "Approve the Series A financing" --blocks 40` | Create a resolution                               |
+| `npx hardhat scenario:vote --network sepolia --id 0 --support true --signer 1`                       | Cast an encrypted vote                            |
+| `npx hardhat scenario:request-tally --network sepolia --id 0`                                        | Request a pass/fail outcome without settling      |
+| `npx hardhat scenario:settle --network sepolia --id 0`                                               | Publicly decrypt the pass/fail outcome and settle |
+| `npx hardhat scenario:status --network sepolia`                                                      | Print read-only lifecycle state                   |
 
-| Task                                                                                                 | Purpose                                        |
-| ---------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| `npx hardhat scenario:issue --network sepolia --to 0x... --amount 500000`                            | Mint encrypted shares to an investor           |
-| `npx hardhat scenario:disclose --network sepolia`                                                    | Publicly disclose total supply with proof      |
-| `npx hardhat scenario:fund --network sepolia --amount 10000`                                         | Mint mcUSD to deployer and approve distributor |
-| `npx hardhat scenario:declare --network sepolia --pool 10000`                                        | Declare a public distribution pool             |
-| `npx hardhat scenario:pay --network sepolia --id 0 --investors 0x...,0x...`                          | Pause, pay a batch, and unpause                |
-| `npx hardhat scenario:delegate --network sepolia --signer 1`                                         | Self-delegate voting power for a signer        |
-| `npx hardhat scenario:propose --network sepolia --text "Approve the Series A financing" --blocks 40` | Create a resolution                            |
-| `npx hardhat scenario:vote --network sepolia --id 0 --support true --signer 1`                       | Cast an encrypted vote                         |
-| `npx hardhat scenario:settle --network sepolia --id 0`                                               | Publicly decrypt tallies and settle            |
-| `npx hardhat scenario:status --network sepolia`                                                      | Print read-only lifecycle state                |
+## Deployed Contracts
 
-## Deployed contracts (Sepolia)
+Round-two contracts were redeployed on Sepolia on 2026-07-03 and source-verified on Etherscan. Sourcify verification is
+not completed.
 
-| Contract              | Address                                      | Etherscan                                                                                  | Sourcify                                                                                                                |
-| --------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| `CharterShares`       | `0x6E823303Ff9416Fa500915A5D56b32e2c3158e45` | [address](https://sepolia.etherscan.io/address/0x6E823303Ff9416Fa500915A5D56b32e2c3158e45) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x6E823303Ff9416Fa500915A5D56b32e2c3158e45/) |
-| `MockConfidentialUSD` | `0xee3B37E13e4833969050Ae6D34311E4E3eD0396a` | [address](https://sepolia.etherscan.io/address/0xee3B37E13e4833969050Ae6D34311E4E3eD0396a) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xee3B37E13e4833969050Ae6D34311E4E3eD0396a/) |
-| `DividendDistributor` | `0x33274e28cA4f04D5177c388517904f73F94CAd99` | [address](https://sepolia.etherscan.io/address/0x33274e28cA4f04D5177c388517904f73F94CAd99) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x33274e28cA4f04D5177c388517904f73F94CAd99/) |
-| `CharterResolutions`  | `0x083E64CC897dD33a7616E30400c1620b9E5DAcD1` | [address](https://sepolia.etherscan.io/address/0x083E64CC897dD33a7616E30400c1620b9E5DAcD1) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x083E64CC897dD33a7616E30400c1620b9E5DAcD1/) |
+| Contract              | Address                                      | Etherscan                                                                                        | Sourcify     |
+| --------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------ |
+| `CharterShares`       | `0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A` | [verified](https://sepolia.etherscan.io/address/0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A#code) | Not verified |
+| `MockConfidentialUSD` | `0xb6B08dC3014D944231E01Ad5a0292Efeea859112` | [verified](https://sepolia.etherscan.io/address/0xb6B08dC3014D944231E01Ad5a0292Efeea859112#code) | Not verified |
+| `DividendDistributor` | `0x42C8c19fbC1E2F5649d540237759E7bFee5617b9` | [verified](https://sepolia.etherscan.io/address/0x42C8c19fbC1E2F5649d540237759E7bFee5617b9#code) | Not verified |
+| `CharterResolutions`  | `0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3` | [verified](https://sepolia.etherscan.io/address/0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3#code) | Not verified |
+| `DemoShareFaucet`     | `0x9AF5A8e7d036E4347D0458748D9bC27131D0710C` | [verified](https://sepolia.etherscan.io/address/0x9AF5A8e7d036E4347D0458748D9bC27131D0710C#code) | Not verified |
 
-## Ecosystem positioning
+## Composes With
 
-Charter is ERC-7984-native, so the share registry sits on the same confidential-token rails as Zama's token examples and
-OpenZeppelin's confidential contracts. It is TokenOps-adjacent rather than a distribution-tool competitor: Charter is
-the privacy-preserving registry layer below payout, governance, and audit workflows. Public totals and proof-backed
-outcomes make it usable for compliance review without turning every holder into public market data.
+Charter is a reusable ERC-7984 equity-registry primitive. The share token is a standard confidential token that can sit
+beside the Confidential Wrapper Registry and other ERC-7984 token rails. The module registry lets new distribution,
+governance, compliance, or reporting modules plug into the share token without changing the registry itself, with module
+registration acting as the explicit trust boundary.
+
+Charter is not a token cap-table dashboard. It is the privacy-preserving equity registry layer beneath dividends,
+shareholder governance, and auditor access.
 
 ## Program
 

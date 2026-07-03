@@ -4,8 +4,8 @@ import { ZeroAddress } from "ethers";
 import { useCallback, useEffect, useState } from "react";
 
 import { AppShell, ConnectGate } from "@/components/AppShell";
-import { Badge, Button, Callout, Card, Field, Input } from "@/components/ui";
-import { ADDRESSES, CONTRACTS_CONFIGURED } from "@/lib/contracts";
+import { Badge, Button, Callout, Card, Field, Input, TxLink, errorText, txHashFrom } from "@/components/ui";
+import { ADDRESSES, CONTRACTS_CONFIGURED, ZERO_HANDLE } from "@/lib/contracts";
 import { encryptBool, publicDecrypt } from "@/lib/fhevm";
 import { useWallet } from "@/lib/wallet";
 
@@ -14,14 +14,16 @@ type ResolutionRow = {
   description: string;
   snapshot: number;
   deadline: number;
-  forVotes: string;
-  againstVotes: string;
+  passedHandle: string;
   tallyRequested: boolean;
   resolved: boolean;
-  forClear: bigint;
-  againstClear: bigint;
   passed: boolean;
   voted: boolean;
+};
+
+type Notice = {
+  label: string;
+  hash: string | null;
 };
 
 export default function GovernancePage() {
@@ -39,9 +41,10 @@ function Governance() {
   const [rows, setRows] = useState<ResolutionRow[]>([]);
   const [clock, setClock] = useState(0);
   const [votingActive, setVotingActive] = useState(true);
+  const [shareHandle, setShareHandle] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
   const [description, setDescription] = useState("");
   const [period, setPeriod] = useState("300");
 
@@ -53,13 +56,16 @@ function Governance() {
     if (!resolutions || !shares || !address) return;
     setLoading(true);
     try {
-      const [count, currentClock, delegatee] = await Promise.all([
+      const [count, currentClock, delegatee, balanceHandle] = await Promise.all([
         resolutions.resolutionCount(),
         shares.clock(),
         shares.delegates(address),
+        shares.confidentialBalanceOf(address),
       ]);
       setClock(Number(currentClock));
       setVotingActive(delegatee !== ZeroAddress);
+      setShareHandle(balanceHandle);
+
       const list: ResolutionRow[] = [];
       for (let i = 0; i < Number(count); i++) {
         const [r, voted] = await Promise.all([resolutions.getResolution(i), resolutions.hasVoted(i, address)]);
@@ -68,19 +74,17 @@ function Governance() {
           description: r.description,
           snapshot: Number(r.snapshot),
           deadline: Number(r.deadline),
-          forVotes: r.forVotes,
-          againstVotes: r.againstVotes,
+          passedHandle: r.passedHandle,
           tallyRequested: r.tallyRequested,
           resolved: r.resolved,
-          forClear: r.forClear,
-          againstClear: r.againstClear,
           passed: r.passed,
           voted,
         });
       }
       setRows(list.reverse());
-    } catch {
-      setError("Could not load resolutions — are the contract addresses configured?");
+      setError(null);
+    } catch (e) {
+      setError(`Could not load resolutions: ${errorText(e)}`);
     } finally {
       setLoading(false);
     }
@@ -96,11 +100,11 @@ function Governance() {
     setError(null);
     setNotice(null);
     try {
-      await fn();
-      setNotice(`${label} confirmed.`);
+      const result = await fn();
+      setNotice({ label, hash: txHashFrom(result) });
       await refresh();
     } catch (e) {
-      setError(`${label} failed: ${(e as Error)?.message?.slice(0, 160) ?? "unknown error"}`);
+      setError(`${label} failed: ${errorText(e)}`);
     }
   };
 
@@ -112,22 +116,28 @@ function Governance() {
 
   const settle = (row: ResolutionRow) =>
     run("Settlement", async () => {
-      if (!row.tallyRequested) await (await resolutions!.requestTally(row.id)).wait();
-      const result = await publicDecrypt(eip1193!, [row.forVotes, row.againstVotes]);
-      const forClear = result.clearValues[row.forVotes];
-      const againstClear = result.clearValues[row.againstVotes];
-      if (typeof forClear !== "bigint" || typeof againstClear !== "bigint")
-        throw new Error("oracle returned no tallies");
-      return (await resolutions!.settle(row.id, forClear, againstClear, result.decryptionProof)).wait();
+      let passedHandle = row.passedHandle;
+      if (!row.tallyRequested) {
+        await (await resolutions!.requestTally(row.id)).wait();
+        const updated = await resolutions!.getResolution(row.id);
+        passedHandle = updated.passedHandle;
+      }
+
+      const result = await publicDecrypt(eip1193!, [passedHandle]);
+      const passed = result.clearValues[passedHandle];
+      if (typeof passed !== "boolean") throw new Error("oracle returned no outcome");
+      return (await resolutions!.settle(row.id, passed, result.decryptionProof)).wait();
     });
+
+  const hasVotingPowerHandle = shareHandle !== null && shareHandle !== ZERO_HANDLE;
 
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Shareholder resolutions</h1>
         <p className="mt-1 text-sm text-muted">
-          Votes are weighted by your holdings at the snapshot — but neither your choice nor your weight is ever
-          revealed. Only the final tallies are disclosed, with a cryptographic proof.
+          Your choice and weight are encrypted end-to-end and never disclosed. Only the resolution&apos;s pass/fail
+          outcome is revealed, proven on-chain by a KMS decryption proof. Who voted is public; how they voted is not.
         </p>
       </div>
 
@@ -137,8 +147,21 @@ function Governance() {
           participate.
         </Callout>
       )}
+      {votingActive && !hasVotingPowerHandle && (
+        <Callout tone="info">No share balance is visible for this wallet yet, so voting is disabled.</Callout>
+      )}
       {error && <Callout tone="error">{error}</Callout>}
-      {notice && <Callout tone="success">{notice}</Callout>}
+      {notice && (
+        <Callout tone="success">
+          {notice.label} confirmed.
+          {notice.hash && (
+            <>
+              {" "}
+              Tx: <TxLink hash={notice.hash} />
+            </>
+          )}
+        </Callout>
+      )}
 
       {(isAdmin || isAgent) && (
         <Card
@@ -204,33 +227,32 @@ function Governance() {
                   </div>
                   <h3 className="mt-2 font-semibold">{row.description}</h3>
                   <p className="mt-1 text-xs text-muted">
-                    Snapshot block {row.snapshot.toLocaleString("en-US")} · closes at block{" "}
+                    Snapshot block {row.snapshot.toLocaleString("en-US")} - closes at block{" "}
                     {row.deadline.toLocaleString("en-US")}
-                    {open && ` · current ${clock.toLocaleString("en-US")}`}
+                    {open && ` - current ${clock.toLocaleString("en-US")}`}
                   </p>
-                  {row.resolved && (
-                    <p className="mt-3 font-mono text-sm tabular">
-                      <span className="text-success">{row.forClear.toLocaleString("en-US")} FOR</span>
-                      <span className="mx-2 text-faint">/</span>
-                      <span className="text-danger">{row.againstClear.toLocaleString("en-US")} AGAINST</span>
-                    </p>
-                  )}
-                  {!row.resolved && (
-                    <p className="mt-3 font-mono text-xs text-faint">
-                      tallies encrypted: {row.forVotes.slice(2, 14)}… / {row.againstVotes.slice(2, 14)}…
-                    </p>
-                  )}
+                  <p className="mt-3 text-sm text-muted">
+                    {row.resolved
+                      ? `Final outcome: ${row.passed ? "Passed" : "Rejected"}. Exact vote weights remain encrypted.`
+                      : row.tallyRequested
+                        ? `Outcome proof handle: ${row.passedHandle.slice(2, 14)}...`
+                        : "Vote direction and voting weight remain encrypted; exact totals are never disclosed."}
+                  </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-2">
                   {open && !row.voted && (
                     <>
-                      <Button className="h-10" disabled={!votingActive} onClick={() => vote(row.id, true)}>
+                      <Button
+                        className="h-10"
+                        disabled={!votingActive || !hasVotingPowerHandle}
+                        onClick={() => vote(row.id, true)}
+                      >
                         For
                       </Button>
                       <Button
                         variant="danger"
                         className="h-10"
-                        disabled={!votingActive}
+                        disabled={!votingActive || !hasVotingPowerHandle}
                         onClick={() => vote(row.id, false)}
                       >
                         Against

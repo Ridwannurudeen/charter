@@ -3,7 +3,13 @@ import type { ContractTransactionResponse } from "ethers";
 import { task } from "hardhat/config";
 import type { HardhatRuntimeEnvironment } from "hardhat/types";
 
-import type { CharterResolutions, CharterShares, DividendDistributor, MockConfidentialUSD } from "../types";
+import type {
+  CharterResolutions,
+  CharterShares,
+  DemoShareFaucet,
+  DividendDistributor,
+  MockConfidentialUSD,
+} from "../types";
 
 type HexHandle = `0x${string}`;
 
@@ -17,11 +23,51 @@ type ScenarioContracts = {
   distributorAddress: string;
   resolutions: CharterResolutions;
   resolutionsAddress: string;
+  demoFaucet: DemoShareFaucet;
+  demoFaucetAddress: string;
 };
 
-async function contracts(hre: HardhatRuntimeEnvironment, signerIndex = 0): Promise<ScenarioContracts> {
+const SEPOLIA_FHEVM_ENV = {
+  FHEVM_HARDHAT_NETWORK: "sepolia",
+  ACL_CONTRACT_ADDRESS: "0xf0Ffdc93b7E186bC2f8CB3dAA75D86d1930A433D",
+  FHEVM_EXECUTOR_CONTRACT_ADDRESS: "0x92C920834Ec8941d2C77D188936E1f7A6f49c127",
+  KMS_VERIFIER_CONTRACT_ADDRESS: "0xbE0E383937d564D7FF0BC3b46c51f0bF8d5C311A",
+  INPUT_VERIFIER_CONTRACT_ADDRESS: "0xBBC1fFCdc7C316aAAd72E807D9b0272BE8F84DA0",
+  HCU_LIMIT_CONTRACT_ADDRESS: "0x594BB474275918AF9609814E68C61B1587c5F838",
+  RELAYER_URL: "https://relayer.testnet.zama.org/v2",
+} as const;
+
+async function initializeFhevmCli(hre: HardhatRuntimeEnvironment) {
+  if (hre.network.name === "sepolia") {
+    for (const [key, value] of Object.entries(SEPOLIA_FHEVM_ENV)) {
+      process.env[key] ??= value;
+    }
+  }
+
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    try {
+      await hre.fhevm.initializeCLIApi();
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt < 4) {
+        await new Promise((resolve) => setTimeout(resolve, attempt * 2_000));
+      }
+    }
+  }
+  throw lastError;
+}
+
+async function contracts(
+  hre: HardhatRuntimeEnvironment,
+  signerIndex = 0,
+  initializeFhevm = false,
+): Promise<ScenarioContracts> {
   if (hre.network.name !== "hardhat") {
-    await hre.fhevm.initializeCLIApi();
+    if (initializeFhevm) {
+      await initializeFhevmCli(hre);
+    }
   } else {
     await hre.deployments.fixture(["Charter"]);
   }
@@ -29,12 +75,14 @@ async function contracts(hre: HardhatRuntimeEnvironment, signerIndex = 0): Promi
   const signer = signers[signerIndex];
   if (!signer) throw new Error(`no signer at index ${signerIndex}`);
 
-  const [sharesDeployment, mcUSDDeployment, distributorDeployment, resolutionsDeployment] = await Promise.all([
-    hre.deployments.get("CharterShares"),
-    hre.deployments.get("MockConfidentialUSD"),
-    hre.deployments.get("DividendDistributor"),
-    hre.deployments.get("CharterResolutions"),
-  ]);
+  const [sharesDeployment, mcUSDDeployment, distributorDeployment, resolutionsDeployment, demoFaucetDeployment] =
+    await Promise.all([
+      hre.deployments.get("CharterShares"),
+      hre.deployments.get("MockConfidentialUSD"),
+      hre.deployments.get("DividendDistributor"),
+      hre.deployments.get("CharterResolutions"),
+      hre.deployments.get("DemoShareFaucet"),
+    ]);
 
   return {
     signer,
@@ -46,6 +94,8 @@ async function contracts(hre: HardhatRuntimeEnvironment, signerIndex = 0): Promi
     distributorAddress: distributorDeployment.address,
     resolutions: await hre.ethers.getContractAt("CharterResolutions", resolutionsDeployment.address, signer),
     resolutionsAddress: resolutionsDeployment.address,
+    demoFaucet: await hre.ethers.getContractAt("DemoShareFaucet", demoFaucetDeployment.address, signer),
+    demoFaucetAddress: demoFaucetDeployment.address,
   };
 }
 
@@ -87,7 +137,7 @@ task<{ to: string; amount: string }>("scenario:issue", "Issue encrypted shares t
   .addParam("amount", "Whole-share amount")
   .setAction((args, hre) =>
     run("scenario:issue", async () => {
-      const c = await contracts(hre);
+      const c = await contracts(hre, 0, true);
       const input = await hre.fhevm
         .createEncryptedInput(c.sharesAddress, c.signer.address)
         .add64(BigInt(args.amount))
@@ -102,7 +152,7 @@ task<{ to: string; amount: string }>("scenario:issue", "Issue encrypted shares t
 
 task("scenario:disclose", "Disclose total issued shares with a KMS proof").setAction((_args, hre) =>
   run("scenario:disclose", async () => {
-    const c = await contracts(hre);
+    const c = await contracts(hre, 0, true);
     await send("requestSupplyDisclosure", c.shares.requestSupplyDisclosure());
     const handle = (await c.shares.confidentialTotalSupply()) as HexHandle;
     const result = await hre.fhevm.publicDecrypt([handle]);
@@ -132,6 +182,9 @@ task<{ pool: string }>("scenario:declare", "Declare a funded distribution")
     run("scenario:declare", async () => {
       const c = await contracts(hre);
       const before = await c.distributor.distributionCount();
+      if (!(await c.shares.paused())) {
+        await send("shares.pause", c.shares.pause());
+      }
       await send("distributor.declare", c.distributor.declare(c.mcUSDAddress, mcUSDUnits(args.pool)));
       const after = await c.distributor.distributionCount();
       console.log(`distribution id: ${after > before ? after - 1n : before}`);
@@ -181,7 +234,7 @@ task<{ id: string; support: string; signer: string }>("scenario:vote", "Cast an 
   .addOptionalParam("signer", "Signer index", "0")
   .setAction((args, hre) =>
     run("scenario:vote", async () => {
-      const c = await contracts(hre, Number(args.signer));
+      const c = await contracts(hre, Number(args.signer), true);
       const support = parseBool(args.support);
       const input = await hre.fhevm
         .createEncryptedInput(c.resolutionsAddress, c.signer.address)
@@ -192,26 +245,43 @@ task<{ id: string; support: string; signer: string }>("scenario:vote", "Cast an 
     }),
   );
 
-task<{ id: string }>("scenario:settle", "Settle a resolution with public tally proof")
+task<{ id: string }>("scenario:settle", "Settle a resolution with public outcome proof")
   .addParam("id", "Resolution id")
   .setAction((args, hre) =>
     run("scenario:settle", async () => {
-      const c = await contracts(hre);
+      const c = await contracts(hre, 0, true);
       const id = BigInt(args.id);
       let resolution = await c.resolutions.getResolution(id);
       if (!resolution.tallyRequested) {
         await send("resolutions.requestTally", c.resolutions.requestTally(id));
         resolution = await c.resolutions.getResolution(id);
       }
-      const forHandle = resolution.forVotes as HexHandle;
-      const againstHandle = resolution.againstVotes as HexHandle;
-      const result = await hre.fhevm.publicDecrypt([forHandle, againstHandle]);
-      const forClear = result.clearValues[forHandle];
-      const againstClear = result.clearValues[againstHandle];
-      if (typeof forClear !== "bigint" || typeof againstClear !== "bigint")
-        throw new Error("oracle returned no tallies");
-      await send("resolutions.settle", c.resolutions.settle(id, forClear, againstClear, result.decryptionProof));
-      console.log(`settled resolution ${id}: ${forClear} FOR / ${againstClear} AGAINST`);
+      const passedHandle = resolution.passedHandle as HexHandle;
+      const result = await hre.fhevm.publicDecrypt([passedHandle]);
+      const passed = result.clearValues[passedHandle];
+      if (typeof passed !== "boolean") throw new Error("oracle returned no outcome");
+      await send("resolutions.settle", c.resolutions.settle(id, passed, result.decryptionProof));
+      console.log(`settled resolution ${id}: ${passed ? "passed" : "rejected"}`);
+    }),
+  );
+
+task<{ id: string }>("scenario:request-tally", "Request a resolution outcome without settling")
+  .addParam("id", "Resolution id")
+  .setAction((args, hre) =>
+    run("scenario:request-tally", async () => {
+      const c = await contracts(hre);
+      await send("resolutions.requestTally", c.resolutions.requestTally(BigInt(args.id)));
+      console.log(`requested tally for resolution ${args.id}`);
+    }),
+  );
+
+task<{ signer: string }>("scenario:claim-shares", "Claim demo shares from the one-time faucet")
+  .addOptionalParam("signer", "Signer index", "0")
+  .setAction((args, hre) =>
+    run("scenario:claim-shares", async () => {
+      const c = await contracts(hre, Number(args.signer));
+      await send("demoFaucet.claim", c.demoFaucet.claim());
+      console.log(`claimed demo shares for ${c.signer.address}`);
     }),
   );
 

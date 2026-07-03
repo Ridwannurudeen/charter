@@ -20,27 +20,39 @@ export function EncryptedValue({
   format = (v) => v.toLocaleString("en-US"),
   suffix = "",
   label = "Decrypt",
+  emptyText = "No shares issued to this wallet yet. Use the demo share faucet below.",
 }: {
   handle: string | null;
   contractAddress: string;
   format?: (value: bigint) => string;
   suffix?: string;
   label?: string;
+  emptyText?: string;
 }) {
   const { eip1193, signer, address } = useWallet();
   const [clear, setClear] = useState<bigint | null>(null);
   const [busy, setBusy] = useState(false);
+  const [busyLabel, setBusyLabel] = useState("Decrypting");
   const [error, setError] = useState<string | null>(null);
 
   if (!handle || handle === ZERO_HANDLE) {
-    return <span className="font-mono text-sm text-faint">— no encrypted value —</span>;
+    return <span className="text-sm text-faint">{emptyText}</span>;
   }
 
   if (clear !== null) {
     return (
-      <span className="reveal-in font-mono text-lg text-foreground tabular">
-        {format(clear)}
-        {suffix && <span className="ml-1 text-sm text-muted">{suffix}</span>}
+      <span className="inline-flex flex-wrap items-center gap-3">
+        <span className="reveal-in font-mono text-lg text-foreground tabular">
+          {format(clear)}
+          {suffix && <span className="ml-1 text-sm text-muted">{suffix}</span>}
+        </span>
+        <button
+          type="button"
+          onClick={() => setClear(null)}
+          className="inline-flex h-8 cursor-pointer items-center rounded-md border border-line px-2.5 text-xs text-muted transition-colors duration-150 hover:border-primary hover:text-primary-bright focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        >
+          Hide
+        </button>
       </span>
     );
   }
@@ -48,14 +60,16 @@ export function EncryptedValue({
   const decrypt = async () => {
     if (!eip1193 || !signer || !address) return;
     setBusy(true);
+    setBusyLabel("Awaiting signature");
     setError(null);
     try {
+      setBusyLabel("Decrypting in browser");
       const results = await userDecrypt(eip1193, signer, address, [{ handle, contractAddress }]);
       const value = results[handle];
       if (typeof value !== "bigint") throw new Error("unexpected decryption result");
       setClear(value);
     } catch {
-      setError("Decryption failed — you may not have access to this value.");
+      setError("Decryption failed - you may not have access to this value.");
     } finally {
       setBusy(false);
     }
@@ -64,7 +78,7 @@ export function EncryptedValue({
   return (
     <span className="inline-flex flex-wrap items-center gap-3">
       <span className="cipher font-mono text-sm" aria-label="encrypted value">
-        {handle.slice(2, 18)}…
+        {handle.slice(2, 18)}...
       </span>
       <button
         onClick={decrypt}
@@ -86,8 +100,11 @@ export function EncryptedValue({
             <path d="M8 11V7a4 4 0 018 0" />
           </svg>
         )}
-        {label}
+        {busy ? busyLabel : label}
       </button>
+      {!busy && (
+        <span className="text-xs text-faint">One EIP-712 signature authorizes a 1-day private decryption session.</span>
+      )}
       {error && <span className="text-xs text-danger">{error}</span>}
     </span>
   );

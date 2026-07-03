@@ -13,8 +13,8 @@ import {CharterShares} from "./CharterShares.sol";
 /// public and verifiable; every individual payout stays encrypted, decryptable only
 /// by its recipient (and any observer they appointed).
 ///
-/// Record-date integrity: payouts require the share token to be paused, so balances
-/// cannot move between batches of the same distribution.
+/// Record-date integrity: declarations require the share token to be paused, so
+/// balances cannot move between the record date and payout batches.
 contract DividendDistributor is ZamaEthereumConfig {
     struct Distribution {
         address token;
@@ -36,6 +36,7 @@ contract DividendDistributor is ZamaEthereumConfig {
     error DistributorNoRecordSupply();
     error DistributorPoolOverflow();
     error DistributorSharesNotPaused();
+    error DistributorStaleSupply();
     error DistributorAlreadyPaid(uint256 id, address investor);
 
     modifier onlyIssuer() {
@@ -59,8 +60,10 @@ contract DividendDistributor is ZamaEthereumConfig {
     /// caller's treasury. The caller must have set this contract as an operator on
     /// `payToken` beforehand.
     function declare(IERC7984 payToken, uint64 poolAmount) external onlyIssuer returns (uint256 id) {
+        require(SHARES.paused(), DistributorSharesNotPaused());
         uint64 totalShares = SHARES.totalSharesOnRecord();
         require(totalShares > 0, DistributorNoRecordSupply());
+        require(!SHARES.supplyDisclosureStale(), DistributorStaleSupply());
         // balance * pool must fit in euint64 for every balance <= totalShares
         require(poolAmount > 0 && uint256(poolAmount) * totalShares <= type(uint64).max, DistributorPoolOverflow());
 

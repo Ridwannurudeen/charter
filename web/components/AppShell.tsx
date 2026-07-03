@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { ADDRESSES, SEPOLIA_CHAIN_ID, ZERO_ADDRESS } from "@/lib/contracts";
 import { useWallet } from "@/lib/wallet";
-import { SEPOLIA_CHAIN_ID } from "@/lib/contracts";
 
 import { DeploymentBanner } from "./DeploymentBanner";
 import { Badge, Button, shortAddress } from "./ui";
@@ -17,9 +17,16 @@ const TABS = [
   { href: "/auditor", label: "Auditor" },
 ];
 
+const ADDRESS_LINKS = [
+  { label: "Shares", address: ADDRESSES.shares },
+  { label: "mcUSD", address: ADDRESSES.mcUSD },
+  { label: "Distributor", address: ADDRESSES.distributor },
+  { label: "Resolutions", address: ADDRESSES.resolutions },
+];
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { address, chainId, connecting, connect, isAdmin, isAgent } = useWallet();
+  const { address, chainId, connecting, connect, eip1193, isAdmin, isAgent } = useWallet();
   const wrongChain = address !== null && chainId !== SEPOLIA_CHAIN_ID;
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
 
@@ -106,7 +113,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </button>
               </div>
             ) : (
-              <Button onClick={connect} disabled={connecting}>
+              <Button onClick={connect} disabled={connecting || !eip1193}>
                 Connect wallet
               </Button>
             )}
@@ -139,7 +146,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </main>
       <footer className="border-t border-line py-6">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 text-xs text-faint sm:px-6">
-          <span>Charter — confidential equity on Ethereum Sepolia</span>
+          <span>Charter - confidential equity on Ethereum Sepolia</span>
+          <a
+            href="https://github.com/Ridwannurudeen/charter"
+            target="_blank"
+            rel="noreferrer"
+            className="text-muted underline-offset-2 hover:text-primary-bright hover:underline"
+          >
+            GitHub
+          </a>
+          {ADDRESS_LINKS.some((item) => item.address !== ZERO_ADDRESS) && (
+            <span className="flex flex-wrap items-center gap-2">
+              {ADDRESS_LINKS.map((item) =>
+                item.address === ZERO_ADDRESS ? null : (
+                  <a
+                    key={item.label}
+                    href={`https://sepolia.etherscan.io/address/${item.address}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-mono text-muted underline-offset-2 hover:text-primary-bright hover:underline"
+                  >
+                    {item.label}: {shortAddress(item.address)}
+                  </a>
+                ),
+              )}
+            </span>
+          )}
           <span>
             Powered by the{" "}
             <a
@@ -173,16 +205,18 @@ export function Logo({ className = "h-7 w-7" }: { className?: string }) {
 }
 
 export function ConnectGate({ children }: { children: React.ReactNode }) {
-  const { address, connect, connecting, chainId } = useWallet();
+  const { address, connect, connecting, chainId, eip1193 } = useWallet();
   if (!address) {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center gap-4 rounded-xl border border-line bg-surface px-6 py-16 text-center">
         <Logo className="h-10 w-10" />
         <h1 className="text-xl font-semibold">Connect to continue</h1>
         <p className="text-sm leading-relaxed text-muted">
-          Charter runs on Ethereum Sepolia. Connect a wallet to access the confidential share registry.
+          {eip1193
+            ? "Charter runs on Ethereum Sepolia. Connect a wallet to access the confidential share registry."
+            : "Install a browser wallet, then connect on Ethereum Sepolia to access the confidential share registry."}
         </p>
-        <Button onClick={connect} disabled={connecting}>
+        <Button onClick={connect} disabled={connecting || !eip1193}>
           Connect wallet
         </Button>
       </div>

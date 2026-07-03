@@ -2,7 +2,7 @@
 
 import type { Eip1193Provider, Signer } from "ethers";
 
-// Types are structural — the SDK is only ever loaded dynamically client-side
+// Types are structural - the SDK is only ever loaded dynamically client-side
 // (it initializes WASM and touches window at import time).
 type FhevmInstance = {
   createEncryptedInput(
@@ -47,7 +47,7 @@ export function getFhevm(provider: Eip1193Provider): Promise<FhevmInstance> {
     instancePromise = (async () => {
       const sdk = await import("@zama-fhe/relayer-sdk/web");
       await sdk.initSDK();
-      const instance = await sdk.createInstance({ ...sdk.SepoliaConfig, network: provider });
+      const instance = await sdk.createInstance({ ...sdk.SepoliaConfigV2, network: provider });
       return instance as unknown as FhevmInstance;
     })();
     instancePromise.catch(() => {

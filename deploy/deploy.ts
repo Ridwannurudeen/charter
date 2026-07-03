@@ -29,14 +29,22 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log: true,
   });
 
+  const demoFaucet = await deploy("DemoShareFaucet", {
+    from: deployer,
+    args: [shares.address],
+    log: true,
+  });
+
   await execute("CharterShares", { from: deployer, log: true }, "setModule", distributor.address, true);
   await execute("CharterShares", { from: deployer, log: true }, "setModule", resolutions.address, true);
   await execute("CharterShares", { from: deployer, log: true }, "addAgent", deployer);
+  await execute("CharterShares", { from: deployer, log: true }, "addAgent", demoFaucet.address);
 
   console.log(`CharterShares:       ${shares.address}`);
   console.log(`MockConfidentialUSD: ${mcUSD.address}`);
   console.log(`DividendDistributor: ${distributor.address}`);
   console.log(`CharterResolutions:  ${resolutions.address}`);
+  console.log(`DemoShareFaucet:     ${demoFaucet.address}`);
 };
 export default func;
 func.id = "deploy_charter";
