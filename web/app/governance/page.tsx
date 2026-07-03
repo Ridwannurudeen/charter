@@ -15,6 +15,8 @@ type ResolutionRow = {
   snapshot: number;
   deadline: number;
   passedHandle: string;
+  voterCount: number;
+  quorumReached: boolean;
   tallyRequested: boolean;
   resolved: boolean;
   passed: boolean;
@@ -47,6 +49,7 @@ function Governance() {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [description, setDescription] = useState("");
   const [period, setPeriod] = useState("300");
+  const [minVoters, setMinVoters] = useState(0);
 
   const refresh = useCallback(async () => {
     if (!CONTRACTS_CONFIGURED) {
@@ -56,15 +59,17 @@ function Governance() {
     if (!resolutions || !shares || !address) return;
     setLoading(true);
     try {
-      const [count, currentClock, delegatee, balanceHandle] = await Promise.all([
+      const [count, currentClock, delegatee, balanceHandle, quorum] = await Promise.all([
         resolutions.resolutionCount(),
         shares.clock(),
         shares.delegates(address),
         shares.confidentialBalanceOf(address),
+        resolutions.MIN_VOTERS(),
       ]);
       setClock(Number(currentClock));
       setVotingActive(delegatee !== ZeroAddress);
       setShareHandle(balanceHandle);
+      setMinVoters(Number(quorum));
 
       const list: ResolutionRow[] = [];
       for (let i = 0; i < Number(count); i++) {
@@ -75,6 +80,8 @@ function Governance() {
           snapshot: Number(r.snapshot),
           deadline: Number(r.deadline),
           passedHandle: r.passedHandle,
+          voterCount: Number(r.voterCount),
+          quorumReached: r.quorumReached,
           tallyRequested: r.tallyRequested,
           resolved: r.resolved,
           passed: r.passed,
@@ -116,12 +123,16 @@ function Governance() {
 
   const settle = (row: ResolutionRow) =>
     run("Settlement", async () => {
-      let passedHandle = row.passedHandle;
+      let { passedHandle, quorumReached } = row;
       if (!row.tallyRequested) {
-        await (await resolutions!.requestTally(row.id)).wait();
+        const tx = await (await resolutions!.requestTally(row.id)).wait();
         const updated = await resolutions!.getResolution(row.id);
         passedHandle = updated.passedHandle;
+        quorumReached = updated.quorumReached;
+        // Below quorum, requestTally already resolves the resolution as rejected — nothing to decrypt.
+        if (updated.resolved) return tx;
       }
+      if (!quorumReached) throw new Error("quorum not reached — no outcome to settle");
 
       const result = await publicDecrypt(eip1193!, [passedHandle]);
       const passed = result.clearValues[passedHandle];
@@ -138,6 +149,7 @@ function Governance() {
         <p className="mt-1 text-sm text-muted">
           Your choice and weight are encrypted end-to-end and never disclosed. Only the resolution&apos;s pass/fail
           outcome is revealed, proven on-chain by a KMS decryption proof. Who voted is public; how they voted is not.
+          {minVoters > 0 && ` A resolution needs at least ${minVoters} voters to reach quorum before it can settle.`}
         </p>
       </div>
 
@@ -217,7 +229,9 @@ function Governance() {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-xs text-faint">#{row.id}</span>
                     {row.resolved ? (
-                      <Badge tone={row.passed ? "success" : "danger"}>{row.passed ? "Passed" : "Rejected"}</Badge>
+                      <Badge tone={row.passed ? "success" : "danger"}>
+                        {row.passed ? "Passed" : row.quorumReached ? "Rejected" : "Rejected (no quorum)"}
+                      </Badge>
                     ) : open ? (
                       <Badge tone="primary">Voting open</Badge>
                     ) : (
@@ -231,9 +245,15 @@ function Governance() {
                     {row.deadline.toLocaleString("en-US")}
                     {open && ` - current ${clock.toLocaleString("en-US")}`}
                   </p>
+                  <p className="mt-1 text-xs text-faint">
+                    {row.voterCount.toLocaleString("en-US")} {row.voterCount === 1 ? "voter" : "voters"}
+                    {minVoters > 0 && ` - quorum needs ${minVoters}`}
+                  </p>
                   <p className="mt-3 text-sm text-muted">
                     {row.resolved
-                      ? `Final outcome: ${row.passed ? "Passed" : "Rejected"}. Exact vote weights remain encrypted.`
+                      ? row.quorumReached
+                        ? `Final outcome: ${row.passed ? "Passed" : "Rejected"}. Exact vote weights remain encrypted.`
+                        : "Rejected: the resolution did not reach quorum, so no tally was disclosed."
                       : row.tallyRequested
                         ? `Outcome proof handle: ${row.passedHandle.slice(2, 14)}...`
                         : "Vote direction and voting weight remain encrypted; exact totals are never disclosed."}

@@ -6,6 +6,7 @@ import { ethers, fhevm, network } from "hardhat";
 import {
   CharterResolutions,
   CharterResolutions__factory,
+  CharterResolutionsV2,
   CharterShares,
   CharterShares__factory,
   DemoShareFaucet,
@@ -299,6 +300,59 @@ describe("Charter", function () {
       const settled = await resolutions.getResolution(resolutionId);
       expect(settled.resolved).to.eq(true);
       expect(settled.passed).to.eq(true);
+    });
+  });
+
+  describe("resolutions v2 quorum", function () {
+    let v2: CharterResolutionsV2;
+    let v2Address: string;
+
+    before(async function () {
+      // The quorum module is registered live through the same share token's module registry —
+      // no share-token redeploy — exactly as it is swapped in on Sepolia.
+      const factory = await ethers.getContractFactory("CharterResolutionsV2");
+      v2 = (await factory.deploy(sharesAddress, 3)) as unknown as CharterResolutionsV2;
+      v2Address = await v2.getAddress();
+      await (await shares.setModule(v2Address, true)).wait();
+    });
+
+    const voteOn = async (id: bigint, voter: HardhatEthersSigner, support: boolean) => {
+      const input = await fhevm.createEncryptedInput(v2Address, voter.address).addBool(support).encrypt();
+      await (await v2.connect(voter).castVote(id, input.handles[0], input.inputProof)).wait();
+    };
+
+    it("reaches quorum with enough voters and settles the outcome", async function () {
+      await (await v2.propose("Approve the employee option pool", 20)).wait();
+      const id = (await v2.resolutionCount()) - 1n;
+      await voteOn(id, signers.alice, true); // 500k FOR
+      await voteOn(id, signers.bob, false); // 300k AGAINST
+      await voteOn(id, signers.carol, true); // 200k FOR
+
+      await network.provider.send("hardhat_mine", ["0x20"]);
+      await (await v2.requestTally(id)).wait();
+      const r = await v2.getResolution(id);
+      expect(r.quorumReached).to.eq(true);
+
+      const result = await fhevm.publicDecrypt([r.passedHandle]);
+      const passed = result.clearValues[r.passedHandle as `0x${string}`] as boolean;
+      expect(passed).to.eq(true); // 700k FOR vs 300k AGAINST
+      await (await v2.settle(id, passed, result.decryptionProof)).wait();
+      expect((await v2.getResolution(id)).passed).to.eq(true);
+    });
+
+    it("fails a resolution below quorum without disclosing any tally", async function () {
+      await (await v2.propose("Sub-quorum resolution", 20)).wait();
+      const id = (await v2.resolutionCount()) - 1n;
+      await voteOn(id, signers.alice, true);
+      await voteOn(id, signers.bob, true); // only 2 voters, quorum is 3
+
+      await network.provider.send("hardhat_mine", ["0x20"]);
+      await (await v2.requestTally(id)).wait();
+      const r = await v2.getResolution(id);
+      expect(r.quorumReached).to.eq(false);
+      expect(r.resolved).to.eq(true);
+      expect(r.passed).to.eq(false);
+      await expect(v2.settle(id, true, "0x")).to.be.revertedWithCustomError(v2, "ResolutionsQuorumNotReached");
     });
   });
 

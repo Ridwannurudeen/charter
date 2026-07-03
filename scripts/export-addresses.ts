@@ -5,7 +5,9 @@ const ARTIFACTS = [
   ["CharterShares", "NEXT_PUBLIC_SHARES_ADDRESS"],
   ["MockConfidentialUSD", "NEXT_PUBLIC_MCUSD_ADDRESS"],
   ["DividendDistributor", "NEXT_PUBLIC_DISTRIBUTOR_ADDRESS"],
-  ["CharterResolutions", "NEXT_PUBLIC_RESOLUTIONS_ADDRESS"],
+  // The active governance module is CharterResolutionsV2 (quorum-enforcing), swapped in live
+  // through the share token's module registry. The original module remains on-chain as history.
+  ["CharterResolutionsV2", "NEXT_PUBLIC_RESOLUTIONS_ADDRESS"],
   ["DemoShareFaucet", "NEXT_PUBLIC_DEMO_FAUCET_ADDRESS"],
 ] as const;
 

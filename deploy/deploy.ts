@@ -35,16 +35,25 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log: true,
   });
 
+  // Governance v2: same share token, quorum-enforcing resolutions module, registered live.
+  const resolutionsV2 = await deploy("CharterResolutionsV2", {
+    from: deployer,
+    args: [shares.address, 3],
+    log: true,
+  });
+
   await execute("CharterShares", { from: deployer, log: true }, "setModule", distributor.address, true);
   await execute("CharterShares", { from: deployer, log: true }, "setModule", resolutions.address, true);
+  await execute("CharterShares", { from: deployer, log: true }, "setModule", resolutionsV2.address, true);
   await execute("CharterShares", { from: deployer, log: true }, "addAgent", deployer);
   await execute("CharterShares", { from: deployer, log: true }, "addAgent", demoFaucet.address);
 
-  console.log(`CharterShares:       ${shares.address}`);
-  console.log(`MockConfidentialUSD: ${mcUSD.address}`);
-  console.log(`DividendDistributor: ${distributor.address}`);
-  console.log(`CharterResolutions:  ${resolutions.address}`);
-  console.log(`DemoShareFaucet:     ${demoFaucet.address}`);
+  console.log(`CharterShares:        ${shares.address}`);
+  console.log(`MockConfidentialUSD:  ${mcUSD.address}`);
+  console.log(`DividendDistributor:  ${distributor.address}`);
+  console.log(`CharterResolutions:   ${resolutions.address}`);
+  console.log(`CharterResolutionsV2: ${resolutionsV2.address}`);
+  console.log(`DemoShareFaucet:      ${demoFaucet.address}`);
 };
 export default func;
 func.id = "deploy_charter";

@@ -66,7 +66,8 @@ export const DISTRIBUTOR_ABI = [
 
 export const RESOLUTIONS_ABI = [
   "function resolutionCount() view returns (uint256)",
-  "function getResolution(uint256 id) view returns (tuple(string description, uint48 snapshot, uint48 deadline, bytes32 forVotes, bytes32 againstVotes, bytes32 passedHandle, bool tallyRequested, bool resolved, bool passed))",
+  "function MIN_VOTERS() view returns (uint32)",
+  "function getResolution(uint256 id) view returns (tuple(string description, uint48 snapshot, uint48 deadline, bytes32 forVotes, bytes32 againstVotes, bytes32 passedHandle, uint32 voterCount, bool quorumReached, bool tallyRequested, bool resolved, bool passed))",
   "function hasVoted(uint256 id, address voter) view returns (bool)",
   "function propose(string description, uint48 votingPeriod) returns (uint256)",
   "function castVote(uint256 id, bytes32 encryptedSupport, bytes inputProof)",

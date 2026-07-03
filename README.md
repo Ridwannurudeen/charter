@@ -75,6 +75,8 @@ checkpointed `getPastVotes` weight, then discloses only the encrypted comparison
 
 - Only the pass/fail outcome of a resolution is disclosed. Individual vote weights and directions never leave
   ciphertext. Voter participation is public.
+- The active governance module (`CharterResolutionsV2`) enforces a minimum-participation quorum (measured on the public
+  voter count, so it leaks nothing new). Below quorum a resolution fails without any tally being disclosed.
 - Cap-table membership and participation are public; only quantities are encrypted.
 - Dividend record date is the pause that must be in place at `declare`. The contract enforces pause-before-declare.
 - Re-run supply disclosure after any issuance before declaring a distribution. `supplyDisclosureStale()` enforces this.
@@ -138,13 +140,14 @@ cd web && npm i && npm run dev
 Round-two contracts were redeployed on Sepolia on 2026-07-03 and source-verified on both Etherscan and Sourcify (partial
 match).
 
-| Contract              | Address                                      | Etherscan                                                                                        | Sourcify                                                                                                                |
-| --------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| `CharterShares`       | `0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A` | [verified](https://sepolia.etherscan.io/address/0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A/) |
-| `MockConfidentialUSD` | `0xb6B08dC3014D944231E01Ad5a0292Efeea859112` | [verified](https://sepolia.etherscan.io/address/0xb6B08dC3014D944231E01Ad5a0292Efeea859112#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xb6B08dC3014D944231E01Ad5a0292Efeea859112/) |
-| `DividendDistributor` | `0x42C8c19fbC1E2F5649d540237759E7bFee5617b9` | [verified](https://sepolia.etherscan.io/address/0x42C8c19fbC1E2F5649d540237759E7bFee5617b9#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x42C8c19fbC1E2F5649d540237759E7bFee5617b9/) |
-| `CharterResolutions`  | `0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3` | [verified](https://sepolia.etherscan.io/address/0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3/) |
-| `DemoShareFaucet`     | `0x9AF5A8e7d036E4347D0458748D9bC27131D0710C` | [verified](https://sepolia.etherscan.io/address/0x9AF5A8e7d036E4347D0458748D9bC27131D0710C#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x9AF5A8e7d036E4347D0458748D9bC27131D0710C/) |
+| Contract                                   | Address                                      | Etherscan                                                                                        | Sourcify                                                                                                                |
+| ------------------------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `CharterShares`                            | `0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A` | [verified](https://sepolia.etherscan.io/address/0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A/) |
+| `MockConfidentialUSD`                      | `0xb6B08dC3014D944231E01Ad5a0292Efeea859112` | [verified](https://sepolia.etherscan.io/address/0xb6B08dC3014D944231E01Ad5a0292Efeea859112#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xb6B08dC3014D944231E01Ad5a0292Efeea859112/) |
+| `DividendDistributor`                      | `0x42C8c19fbC1E2F5649d540237759E7bFee5617b9` | [verified](https://sepolia.etherscan.io/address/0x42C8c19fbC1E2F5649d540237759E7bFee5617b9#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x42C8c19fbC1E2F5649d540237759E7bFee5617b9/) |
+| `CharterResolutions` (v1)                  | `0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3` | [verified](https://sepolia.etherscan.io/address/0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3/) |
+| `CharterResolutionsV2` (active governance) | `0x88f7337CCdD92Cd4B27509edBA3b3bb66a34e4e2` | [verified](https://sepolia.etherscan.io/address/0x88f7337CCdD92Cd4B27509edBA3b3bb66a34e4e2#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x88f7337CCdD92Cd4B27509edBA3b3bb66a34e4e2/) |
+| `DemoShareFaucet`                          | `0x9AF5A8e7d036E4347D0458748D9bC27131D0710C` | [verified](https://sepolia.etherscan.io/address/0x9AF5A8e7d036E4347D0458748D9bC27131D0710C#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x9AF5A8e7d036E4347D0458748D9bC27131D0710C/) |
 
 ## Composes With
 
@@ -152,6 +155,13 @@ Charter is a reusable ERC-7984 equity-registry primitive. The share token is a s
 beside the Confidential Wrapper Registry and other ERC-7984 token rails. The module registry lets new distribution,
 governance, compliance, or reporting modules plug into the share token without changing the registry itself, with module
 registration acting as the explicit trust boundary.
+
+**This composability is demonstrated live, not just claimed.** The governance module was upgraded on-chain from
+`CharterResolutions` (v1) to `CharterResolutionsV2` — which adds a minimum-participation quorum so a resolution can no
+longer pass on a single vote — by deploying V2 against the **same share token** and registering it through
+`CharterShares.setModule`. No share-token redeploy, no migration of holdings; the registry swapped the governance
+behaviour underneath the equity ledger. Both modules remain verified on-chain (see the addresses table). The frontend
+now points at V2, and the quorum is enforced on the public voter count so nothing that was previously private is leaked.
 
 Charter is not a token cap-table dashboard. It is the privacy-preserving equity registry layer beneath dividends,
 shareholder governance, and auditor access.

@@ -98,16 +98,63 @@ export default function Landing() {
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
-              href="/issuer"
+              href="/investor"
               className="inline-flex h-12 items-center rounded-lg bg-primary px-6 text-sm font-semibold text-on-primary transition-colors duration-150 hover:bg-primary-bright"
             >
-              Open the issuer console
+              Try the live demo
             </Link>
             <Link
-              href="/investor"
+              href="/issuer"
               className="inline-flex h-12 items-center rounded-lg border border-line-strong px-6 text-sm text-foreground transition-colors duration-150 hover:border-primary hover:text-primary-bright"
             >
-              I&apos;m a shareholder
+              Issuer console (company)
+            </Link>
+          </div>
+        </section>
+
+        <section className="mx-auto w-full max-w-6xl px-4 pb-4 sm:px-6">
+          <div className="rounded-2xl border border-primary/25 bg-surface p-6 sm:p-8">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="text-lg font-bold tracking-tight sm:text-xl">Try Charter in 4 steps</h2>
+              <span className="text-xs text-faint">Self-serve on Sepolia — no allowlist, ~3 minutes</span>
+            </div>
+            <ol className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                {
+                  n: "1",
+                  t: "Claim demo shares",
+                  b: "Connect a wallet in the Investor portal and claim 1,000 encrypted shares from the on-chain faucet.",
+                },
+                {
+                  n: "2",
+                  t: "Decrypt your stake",
+                  b: "One signature decrypts your position in your browser. Nobody else — not even us — can read it.",
+                },
+                {
+                  n: "3",
+                  t: "Cast an encrypted vote",
+                  b: "Activate voting power and vote on the open resolution. Your choice and weight stay encrypted.",
+                },
+                {
+                  n: "4",
+                  t: "Settle with proof",
+                  b: "Trigger a permissionless KMS settle. Only the pass/fail outcome is revealed, proven on-chain.",
+                },
+              ].map((s) => (
+                <li key={s.n} className="flex flex-col gap-1.5">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 font-mono text-sm text-primary-bright">
+                    {s.n}
+                  </span>
+                  <span className="text-sm font-semibold">{s.t}</span>
+                  <span className="text-sm leading-relaxed text-muted">{s.b}</span>
+                </li>
+              ))}
+            </ol>
+            <Link
+              href="/investor"
+              className="mt-6 inline-flex h-11 items-center rounded-lg bg-primary px-5 text-sm font-semibold text-on-primary transition-colors duration-150 hover:bg-primary-bright"
+            >
+              Start step 1
             </Link>
           </div>
         </section>

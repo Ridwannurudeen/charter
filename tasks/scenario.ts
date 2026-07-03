@@ -4,7 +4,7 @@ import { task } from "hardhat/config";
 import type { HardhatRuntimeEnvironment } from "hardhat/types";
 
 import type {
-  CharterResolutions,
+  CharterResolutionsV2,
   CharterShares,
   DemoShareFaucet,
   DividendDistributor,
@@ -21,7 +21,7 @@ type ScenarioContracts = {
   mcUSDAddress: string;
   distributor: DividendDistributor;
   distributorAddress: string;
-  resolutions: CharterResolutions;
+  resolutions: CharterResolutionsV2;
   resolutionsAddress: string;
   demoFaucet: DemoShareFaucet;
   demoFaucetAddress: string;
@@ -80,7 +80,7 @@ async function contracts(
       hre.deployments.get("CharterShares"),
       hre.deployments.get("MockConfidentialUSD"),
       hre.deployments.get("DividendDistributor"),
-      hre.deployments.get("CharterResolutions"),
+      hre.deployments.get("CharterResolutionsV2"),
       hre.deployments.get("DemoShareFaucet"),
     ]);
 
@@ -92,7 +92,7 @@ async function contracts(
     mcUSDAddress: mcUSDDeployment.address,
     distributor: await hre.ethers.getContractAt("DividendDistributor", distributorDeployment.address, signer),
     distributorAddress: distributorDeployment.address,
-    resolutions: await hre.ethers.getContractAt("CharterResolutions", resolutionsDeployment.address, signer),
+    resolutions: await hre.ethers.getContractAt("CharterResolutionsV2", resolutionsDeployment.address, signer),
     resolutionsAddress: resolutionsDeployment.address,
     demoFaucet: await hre.ethers.getContractAt("DemoShareFaucet", demoFaucetDeployment.address, signer),
     demoFaucetAddress: demoFaucetDeployment.address,
@@ -256,6 +256,10 @@ task<{ id: string }>("scenario:settle", "Settle a resolution with public outcome
         await send("resolutions.requestTally", c.resolutions.requestTally(id));
         resolution = await c.resolutions.getResolution(id);
       }
+      if (!resolution.quorumReached) {
+        console.log(`resolution ${id} did not reach quorum; rejected without disclosing a tally`);
+        return;
+      }
       const passedHandle = resolution.passedHandle as HexHandle;
       const result = await hre.fhevm.publicDecrypt([passedHandle]);
       const passed = result.clearValues[passedHandle];
@@ -301,7 +305,7 @@ task("scenario:status", "Print Charter scenario state").setAction((_args, hre) =
     for (let i = 0n; i < resolutionCount; i++) {
       const r = await c.resolutions.getResolution(i);
       console.log(
-        `resolution #${i}: resolved=${r.resolved} passed=${r.passed} tallyRequested=${r.tallyRequested} deadline=${r.deadline} text="${r.description}"`,
+        `resolution #${i}: voters=${r.voterCount} quorum=${r.quorumReached} resolved=${r.resolved} passed=${r.passed} tallyRequested=${r.tallyRequested} deadline=${r.deadline} text="${r.description}"`,
       );
     }
   }),
