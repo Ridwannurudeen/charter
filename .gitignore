@@ -22,6 +22,8 @@ tmp
 # files
 *.env
 *.log
+# internal handoff/brief docs — never publish to the public repo
+HANDOFF*.md
 .DS_Store
 .pnp.*
 coverage.json
