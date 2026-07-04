@@ -158,7 +158,7 @@ export default function Landing() {
                 ["0x8a21...19B4", "500,000"],
                 ["0x39c0...E7a2", "300,000"],
                 ["0xF116...4c77", "200,000"],
-              ].map(([holder, shares]) => (
+              ].map(([holder, shares], i) => (
                 <div
                   key={holder}
                   className="grid grid-cols-[1fr_10rem] items-center gap-4 border-b border-line px-4 py-4 last:border-b-0"
@@ -171,7 +171,9 @@ export default function Landing() {
                     <span className="cipher absolute inset-y-0 right-0 w-32" aria-hidden="true">
                       redacted
                     </span>
-                    <span className="redact-value relative">{shares}</span>
+                    <span className="redact-value relative" style={{ animationDelay: `${i * 280}ms` }}>
+                      {shares}
+                    </span>
                   </div>
                 </div>
               ))}
