@@ -4,6 +4,7 @@ import { expect } from "chai";
 import { ethers, fhevm, network } from "hardhat";
 
 import {
+  AccreditationRegistry,
   CharterResolutions,
   CharterResolutions__factory,
   CharterResolutionsV2,
@@ -15,8 +16,11 @@ import {
   DemoShareFaucet__factory,
   DividendDistributor,
   DividendDistributor__factory,
+  ForceTransferGuardian,
+  GatedIssuance,
   MockConfidentialUSD,
   MockConfidentialUSD__factory,
+  VestingSchedule,
 } from "../types";
 
 type Signers = {
@@ -544,6 +548,222 @@ describe("Charter", function () {
       const passed = result.clearValues[r.passedHandle as `0x${string}`] as boolean;
       await (await v3.settle(id, passed, result.decryptionProof)).wait();
       expect((await v3.getResolution(id)).resolved).to.eq(true);
+    });
+  });
+
+  describe("vesting schedule", function () {
+    let vesting: VestingSchedule;
+    let vestingAddress: string;
+    let beneficiary: HardhatEthersSigner;
+    const FAR_FUTURE = 4_000_000_000;
+
+    before(async function () {
+      beneficiary = (await ethers.getSigners())[9];
+      const factory = await ethers.getContractFactory("VestingSchedule");
+      vesting = (await factory.deploy(sharesAddress)) as unknown as VestingSchedule;
+      vestingAddress = await vesting.getAddress();
+
+      await mintShares(signers.issuer, 100_000);
+      await (await shares.connect(signers.issuer).setOperator(vestingAddress, FAR_FUTURE)).wait();
+    });
+
+    it("releases nothing before the cliff, the proportional catch-up at the cliff, and the rest linearly", async function () {
+      const total = 40_000;
+      const input = await fhevm.createEncryptedInput(vestingAddress, signers.issuer.address).add64(total).encrypt();
+      await (
+        await vesting
+          .connect(signers.issuer)
+          .createGrant(beneficiary.address, input.handles[0], input.inputProof, 10, 40)
+      ).wait();
+      const id = (await vesting.grantCount()) - 1n;
+
+      const [preElapsed] = await vesting.vestingProgress(id);
+      expect(preElapsed).to.eq(0);
+      await (await vesting.connect(beneficiary).claim(id)).wait();
+      expect(await decryptSharesOf(beneficiary)).to.eq(0);
+
+      await network.provider.send("hardhat_mine", ["0xc"]); // past the 10-block cliff
+      await (await vesting.connect(beneficiary).claim(id)).wait();
+      // Read progress AFTER the claim tx lands, at the same block it executed in, so the expected
+      // fraction matches exactly what claim() itself computed (a claim() call mines its own block).
+      const [midElapsed, duration] = await vesting.vestingProgress(id);
+      const expectedAtCliff = (BigInt(total) * BigInt(midElapsed)) / BigInt(duration);
+      expect(await decryptSharesOf(beneficiary)).to.eq(expectedAtCliff);
+
+      await network.provider.send("hardhat_mine", ["0x28"]); // well past full vest at 40 blocks
+      await (await vesting.connect(beneficiary).claim(id)).wait();
+      expect(await decryptSharesOf(beneficiary)).to.eq(total);
+    });
+
+    it("rejects claims from anyone but the beneficiary", async function () {
+      const input = await fhevm.createEncryptedInput(vestingAddress, signers.issuer.address).add64(1000).encrypt();
+      await (
+        await vesting
+          .connect(signers.issuer)
+          .createGrant(beneficiary.address, input.handles[0], input.inputProof, 0, 10)
+      ).wait();
+      const id = (await vesting.grantCount()) - 1n;
+      await expect(vesting.connect(signers.dave).claim(id)).to.be.revertedWithCustomError(
+        vesting,
+        "VestingNotBeneficiary",
+      );
+    });
+
+    it("settles a revoked grant: pays out vested-to-date, returns the unvested remainder", async function () {
+      const total = 20_000;
+      const input = await fhevm.createEncryptedInput(vestingAddress, signers.issuer.address).add64(total).encrypt();
+      await (
+        await vesting
+          .connect(signers.issuer)
+          .createGrant(beneficiary.address, input.handles[0], input.inputProof, 5, 20)
+      ).wait();
+      const id = (await vesting.grantCount()) - 1n;
+
+      await network.provider.send("hardhat_mine", ["0xa"]);
+      const beneficiaryBefore = await decryptSharesOf(beneficiary);
+      const issuerBefore = await decryptSharesOf(signers.issuer);
+      await (await vesting.connect(signers.issuer).revoke(id)).wait();
+      // Read progress AFTER revoke() lands, at the same block it executed in — revoke() mines its
+      // own block, so reading before it would understate elapsed by one block.
+      const [elapsed, duration] = await vesting.vestingProgress(id);
+      const expectedVested = (BigInt(total) * BigInt(elapsed)) / BigInt(duration);
+
+      expect((await decryptSharesOf(beneficiary)) - beneficiaryBefore).to.eq(expectedVested);
+      expect((await decryptSharesOf(signers.issuer)) - issuerBefore).to.eq(BigInt(total) - expectedVested);
+
+      await expect(vesting.connect(beneficiary).claim(id)).to.be.revertedWithCustomError(
+        vesting,
+        "VestingAlreadyRevoked",
+      );
+    });
+  });
+
+  describe("gated issuance (accreditation allowlist)", function () {
+    let registry: AccreditationRegistry;
+    let gated: GatedIssuance;
+    let gatedAddress: string;
+    let applicant: HardhatEthersSigner;
+
+    before(async function () {
+      applicant = (await ethers.getSigners())[10];
+      const registryFactory = await ethers.getContractFactory("AccreditationRegistry");
+      registry = (await registryFactory.deploy(signers.issuer.address)) as unknown as AccreditationRegistry;
+      const registryAddress = await registry.getAddress();
+
+      const gatedFactory = await ethers.getContractFactory("GatedIssuance");
+      gated = (await gatedFactory.deploy(sharesAddress, registryAddress)) as unknown as GatedIssuance;
+      gatedAddress = await gated.getAddress();
+      await (await shares.addAgent(gatedAddress)).wait();
+    });
+
+    it("refuses to mint to a wallet that has not been accredited", async function () {
+      const input = await fhevm.createEncryptedInput(gatedAddress, signers.issuer.address).add64(1000).encrypt();
+      await expect(
+        gated.connect(signers.issuer).issue(applicant.address, input.handles[0], input.inputProof),
+      ).to.be.revertedWithCustomError(gated, "IssuanceNotAccredited");
+    });
+
+    it("mints once the wallet is accredited", async function () {
+      await (await registry.connect(signers.issuer).setAccredited(applicant.address, true)).wait();
+      const input = await fhevm.createEncryptedInput(gatedAddress, signers.issuer.address).add64(1000).encrypt();
+      await (await gated.connect(signers.issuer).issue(applicant.address, input.handles[0], input.inputProof)).wait();
+      expect(await decryptSharesOf(applicant)).to.eq(1000);
+    });
+
+    it("restricts accreditation changes to the registry admin", async function () {
+      await expect(
+        registry.connect(signers.bob).setAccredited(signers.bob.address, true),
+      ).to.be.revertedWithCustomError(registry, "RegistryNotAdmin");
+    });
+
+    it("restricts issuance to the token's issuer role", async function () {
+      const input = await fhevm.createEncryptedInput(gatedAddress, signers.bob.address).add64(1000).encrypt();
+      await expect(
+        gated.connect(signers.bob).issue(applicant.address, input.handles[0], input.inputProof),
+      ).to.be.revertedWithCustomError(gated, "IssuanceNotIssuer");
+    });
+  });
+
+  describe("force-transfer guardian (M-of-N, timelocked enforcement)", function () {
+    let guardian: ForceTransferGuardian;
+    let guardianAddress: string;
+    let g1: HardhatEthersSigner;
+    let g2: HardhatEthersSigner;
+    let g3: HardhatEthersSigner;
+    let recovery: HardhatEthersSigner;
+    const TIMELOCK_BLOCKS = 5;
+
+    before(async function () {
+      const s = await ethers.getSigners();
+      [g1, g2, g3, recovery] = [s[11], s[12], s[13], s[14]];
+      const factory = await ethers.getContractFactory("ForceTransferGuardian");
+      guardian = (await factory.deploy(
+        sharesAddress,
+        [g1.address, g2.address, g3.address],
+        2,
+        TIMELOCK_BLOCKS,
+      )) as unknown as ForceTransferGuardian;
+      guardianAddress = await guardian.getAddress();
+      await (await shares.addAgent(guardianAddress)).wait();
+    });
+
+    it("blocks execution until quorum is reached and the timelock elapses, then moves the shares", async function () {
+      const amount = 1_000;
+      const input = await fhevm.createEncryptedInput(guardianAddress, g1.address).add64(amount).encrypt();
+      await (
+        await guardian
+          .connect(g1)
+          .propose(
+            signers.alice.address,
+            recovery.address,
+            input.handles[0],
+            input.inputProof,
+            "frozen wallet recovery order #1",
+          )
+      ).wait();
+      const id = (await guardian.proposalCount()) - 1n;
+      expect((await guardian.getProposal(id)).confirmations).to.eq(1);
+
+      await expect(guardian.execute(id)).to.be.revertedWithCustomError(guardian, "GuardianQuorumNotReached");
+
+      await (await guardian.connect(g2).confirm(id)).wait();
+      expect((await guardian.getProposal(id)).confirmations).to.eq(2);
+      await expect(guardian.execute(id)).to.be.revertedWithCustomError(guardian, "GuardianTimelockNotElapsed");
+
+      // `recovery` has never held a balance yet, so its confidentialBalanceOf handle is genuinely
+      // uninitialized (not an encrypted zero) — only read it after this transfer initializes it.
+      const aliceBefore = await decryptSharesOf(signers.alice);
+
+      await network.provider.send("hardhat_mine", ["0x5"]);
+      await (await guardian.execute(id)).wait();
+
+      expect(aliceBefore - (await decryptSharesOf(signers.alice))).to.eq(amount);
+      expect(await decryptSharesOf(recovery)).to.eq(amount);
+
+      await expect(guardian.execute(id)).to.be.revertedWithCustomError(guardian, "GuardianAlreadyExecuted");
+    });
+
+    it("rejects proposals and confirmations from non-guardians", async function () {
+      const input = await fhevm.createEncryptedInput(guardianAddress, signers.bob.address).add64(1).encrypt();
+      await expect(
+        guardian
+          .connect(signers.bob)
+          .propose(signers.alice.address, recovery.address, input.handles[0], input.inputProof, "not a guardian"),
+      ).to.be.revertedWithCustomError(guardian, "GuardianNotGuardian");
+    });
+
+    it("rejects a guardian confirming the same proposal twice", async function () {
+      const input = await fhevm.createEncryptedInput(guardianAddress, g1.address).add64(1).encrypt();
+      await (
+        await guardian
+          .connect(g1)
+          .propose(signers.alice.address, recovery.address, input.handles[0], input.inputProof, "second order")
+      ).wait();
+      const id = (await guardian.proposalCount()) - 1n;
+      await expect(guardian.connect(g1).confirm(id)).to.be.revertedWithCustomError(
+        guardian,
+        "GuardianAlreadyConfirmed",
+      );
     });
   });
 });

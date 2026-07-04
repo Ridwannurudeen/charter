@@ -56,6 +56,40 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log: true,
   });
 
+  // Confidential vesting: the lifecycle mechanic every real cap table is built around. Standalone
+  // module — it escrows via confidentialTransferFrom/confidentialTransfer, not the module registry,
+  // so it needs no setModule grant.
+  const vesting = await deploy("VestingSchedule", {
+    from: deployer,
+    args: [shares.address],
+    log: true,
+  });
+
+  // Accreditation gate: a regulated issuer mints only to a default-deny allowlist, not the open
+  // public. GatedIssuance is the compliant counterpart to DemoShareFaucet, registered as its own
+  // agent so it can mint — the open demo faucet is untouched for judges.
+  const registry = await deploy("AccreditationRegistry", {
+    from: deployer,
+    args: [deployer],
+    log: true,
+  });
+  const gatedIssuance = await deploy("GatedIssuance", {
+    from: deployer,
+    args: [shares.address, registry.address],
+    log: true,
+  });
+
+  // Force-transfer guardian: production-recommended enforcement path. Instead of one key silently
+  // seizing shares, a forced transfer must be proposed with a public reason, confirmed by a 2-of-3
+  // guardian quorum, and wait out a timelock before anyone can execute it.
+  const namedSigners = await hre.ethers.getSigners();
+  const guardianAddresses = [namedSigners[3].address, namedSigners[4].address, namedSigners[5].address];
+  const guardian = await deploy("ForceTransferGuardian", {
+    from: deployer,
+    args: [shares.address, guardianAddresses, 2, 30],
+    log: true,
+  });
+
   await execute("CharterShares", { from: deployer, log: true }, "setModule", distributor.address, true);
   await execute("CharterShares", { from: deployer, log: true }, "setModule", resolutions.address, true);
   await execute("CharterShares", { from: deployer, log: true }, "setModule", resolutionsV2.address, true);
@@ -63,6 +97,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   await execute("CharterShares", { from: deployer, log: true }, "setModule", tenderOffer.address, true);
   await execute("CharterShares", { from: deployer, log: true }, "addAgent", deployer);
   await execute("CharterShares", { from: deployer, log: true }, "addAgent", demoFaucet.address);
+  await execute("CharterShares", { from: deployer, log: true }, "addAgent", gatedIssuance.address);
+  await execute("CharterShares", { from: deployer, log: true }, "addAgent", guardian.address);
 
   console.log(`CharterShares:            ${shares.address}`);
   console.log(`MockConfidentialUSD:      ${mcUSD.address}`);
@@ -72,6 +108,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   console.log(`CharterResolutionsV3:     ${resolutionsV3.address}`);
   console.log(`ConfidentialTenderOffer:  ${tenderOffer.address}`);
   console.log(`DemoShareFaucet:          ${demoFaucet.address}`);
+  console.log(`VestingSchedule:          ${vesting.address}`);
+  console.log(`AccreditationRegistry:    ${registry.address}`);
+  console.log(`GatedIssuance:            ${gatedIssuance.address}`);
+  console.log(`ForceTransferGuardian:    ${guardian.address}`);
+  console.log(`Guardians:                ${guardianAddresses.join(", ")}`);
 };
 export default func;
 func.id = "deploy_charter";

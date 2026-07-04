@@ -1,0 +1,260 @@
+{
+  "address": "0x737461559C405b173288d8E8a42F6CD1711A356E",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "admin_",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "caller",
+          "type": "address"
+        }
+      ],
+      "name": "RegistryNotAdmin",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "RegistryZeroAddress",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "status",
+          "type": "bool"
+        }
+      ],
+      "name": "AccreditationSet",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "previousAdmin",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newAdmin",
+          "type": "address"
+        }
+      ],
+      "name": "AdminTransferred",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "accredited",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "admin",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "isAccredited",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "internalType": "bool",
+          "name": "status",
+          "type": "bool"
+        }
+      ],
+      "name": "setAccredited",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address[]",
+          "name": "accounts",
+          "type": "address[]"
+        },
+        {
+          "internalType": "bool",
+          "name": "status",
+          "type": "bool"
+        }
+      ],
+      "name": "setAccreditedBatch",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newAdmin",
+          "type": "address"
+        }
+      ],
+      "name": "transferAdmin",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x81365b329b7a4b748fa485df375e010f7c3a04a5f53e072b98af8b4596834e56",
+  "receipt": {
+    "to": null,
+    "from": "0x04045Ca68BEF611adBD76e58C028cEFf4a3d640D",
+    "contractAddress": "0x737461559C405b173288d8E8a42F6CD1711A356E",
+    "transactionIndex": 63,
+    "gasUsed": "346641",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000024000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000008000000000000000000000000000000000000000000000000000000040000000002000000000000000100000000000000000000000000000000020020000000200000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x844be133770b251a99713d25db6223dc44983c8d00804df00699fff552669a1c",
+    "transactionHash": "0x81365b329b7a4b748fa485df375e010f7c3a04a5f53e072b98af8b4596834e56",
+    "logs": [
+      {
+        "transactionIndex": 63,
+        "blockNumber": 11201916,
+        "transactionHash": "0x81365b329b7a4b748fa485df375e010f7c3a04a5f53e072b98af8b4596834e56",
+        "address": "0x737461559C405b173288d8E8a42F6CD1711A356E",
+        "topics": [
+          "0xf8ccb027dfcd135e000e9d45e6cc2d662578a8825d4c45b5e32e0adf67e79ec6",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x00000000000000000000000004045ca68bef611adbd76e58c028ceff4a3d640d"
+        ],
+        "data": "0x",
+        "logIndex": 631,
+        "blockHash": "0x844be133770b251a99713d25db6223dc44983c8d00804df00699fff552669a1c"
+      }
+    ],
+    "blockNumber": 11201916,
+    "cumulativeGasUsed": "12619310",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    "0x04045Ca68BEF611adBD76e58C028cEFf4a3d640D"
+  ],
+  "numDeployments": 1,
+  "solcInputHash": "cbda46a3f0de2fe23df50a1d1565b9b5",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.27+commit.40a35a09\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"admin_\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"caller\",\"type\":\"address\"}],\"name\":\"RegistryNotAdmin\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"RegistryZeroAddress\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"status\",\"type\":\"bool\"}],\"name\":\"AccreditationSet\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousAdmin\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newAdmin\",\"type\":\"address\"}],\"name\":\"AdminTransferred\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"accredited\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"admin\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"isAccredited\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"status\",\"type\":\"bool\"}],\"name\":\"setAccredited\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"accounts\",\"type\":\"address[]\"},{\"internalType\":\"bool\",\"name\":\"status\",\"type\":\"bool\"}],\"name\":\"setAccreditedBatch\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newAdmin\",\"type\":\"address\"}],\"name\":\"transferAdmin\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"title\":\"AccreditationRegistry \\u2014 an on-chain allowlist of accredited/KYC'd wallets\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"notice\":\"A regulated equity offering issues to a default-deny list of verified investors, not an open public. This registry is the on-chain primitive for that: an admin (the issuer's compliance function, or a delegated KYC provider) marks specific wallets as accredited; nothing else. It does not perform real identity verification itself \\u2014 that happens off-chain, as it does for every real securities offering \\u2014 but it gives an issuance module a concrete, auditable gate to check before minting, replacing the \\\"mint to anyone, block bad actors after the fact\\\" pattern with \\\"mint only to wallets explicitly cleared in advance.\\\"\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/AccreditationRegistry.sol\":\"AccreditationRegistry\"},\"evmVersion\":\"cancun\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"none\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":800},\"remappings\":[]},\"sources\":{\"contracts/AccreditationRegistry.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.27;\\n\\n/// @title AccreditationRegistry \\u2014 an on-chain allowlist of accredited/KYC'd wallets\\n/// @notice A regulated equity offering issues to a default-deny list of verified investors, not an\\n/// open public. This registry is the on-chain primitive for that: an admin (the issuer's compliance\\n/// function, or a delegated KYC provider) marks specific wallets as accredited; nothing else. It\\n/// does not perform real identity verification itself \\u2014 that happens off-chain, as it does for\\n/// every real securities offering \\u2014 but it gives an issuance module a concrete, auditable gate to\\n/// check before minting, replacing the \\\"mint to anyone, block bad actors after the fact\\\" pattern\\n/// with \\\"mint only to wallets explicitly cleared in advance.\\\"\\ncontract AccreditationRegistry {\\n    address public admin;\\n    mapping(address account => bool) public accredited;\\n\\n    event AdminTransferred(address indexed previousAdmin, address indexed newAdmin);\\n    event AccreditationSet(address indexed account, bool status);\\n\\n    error RegistryNotAdmin(address caller);\\n    error RegistryZeroAddress();\\n\\n    modifier onlyAdmin() {\\n        require(msg.sender == admin, RegistryNotAdmin(msg.sender));\\n        _;\\n    }\\n\\n    constructor(address admin_) {\\n        require(admin_ != address(0), RegistryZeroAddress());\\n        admin = admin_;\\n        emit AdminTransferred(address(0), admin_);\\n    }\\n\\n    function transferAdmin(address newAdmin) external onlyAdmin {\\n        require(newAdmin != address(0), RegistryZeroAddress());\\n        emit AdminTransferred(admin, newAdmin);\\n        admin = newAdmin;\\n    }\\n\\n    function setAccredited(address account, bool status) external onlyAdmin {\\n        accredited[account] = status;\\n        emit AccreditationSet(account, status);\\n    }\\n\\n    function setAccreditedBatch(address[] calldata accounts, bool status) external onlyAdmin {\\n        for (uint256 i = 0; i < accounts.length; i++) {\\n            accredited[accounts[i]] = status;\\n            emit AccreditationSet(accounts[i], status);\\n        }\\n    }\\n\\n    function isAccredited(address account) external view returns (bool) {\\n        return accredited[account];\\n    }\\n}\\n\",\"keccak256\":\"0x523a8f9548bfe8f885c8cb615afb78a886203fffb2786e83cfc16496824818a4\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x6080604052348015600e575f5ffd5b506040516105a53803806105a5833981016040819052602b91609d565b6001600160a01b038116605157604051636ca1fdd760e01b815260040160405180910390fd5b5f80546001600160a01b0319166001600160a01b03831690811782556040519091907ff8ccb027dfcd135e000e9d45e6cc2d662578a8825d4c45b5e32e0adf67e79ec6908290a35060c8565b5f6020828403121560ac575f5ffd5b81516001600160a01b038116811460c1575f5ffd5b9392505050565b6104d0806100d55f395ff3fe608060405234801561000f575f5ffd5b506004361061006f575f3560e01c80637b06bc7c1161004d5780637b06bc7c146100db57806382a9f145146100fd578063f851a44014610110575f5ffd5b80632d598d7b14610073578063646cd2e2146100b357806375829def146100c8575b5f5ffd5b61009e6100813660046103d0565b6001600160a01b03165f9081526001602052604090205460ff1690565b60405190151581526020015b60405180910390f35b6100c66100c13660046103ff565b61013a565b005b6100c66100d63660046103d0565b61024d565b61009e6100e93660046103d0565b60016020525f908152604090205460ff1681565b6100c661010b36600461047e565b61031e565b5f54610122906001600160a01b031681565b6040516001600160a01b0390911681526020016100aa565b5f5433906001600160a01b031681146101775760405163032efc7560e61b81526001600160a01b0390911660048201526024015b60405180910390fd5b505f5b82811015610247578160015f868685818110610198576101986104af565b90506020020160208101906101ad91906103d0565b6001600160a01b0316815260208101919091526040015f20805460ff19169115159190911790558383828181106101e6576101e66104af565b90506020020160208101906101fb91906103d0565b6001600160a01b03167fc80c123a2acce14e10ca3de8bf2e580f3280c12795d231ef3bf36a19ebc85a6383604051610237911515815260200190565b60405180910390a260010161017a565b50505050565b5f5433906001600160a01b031681146102855760405163032efc7560e61b81526001600160a01b03909116600482015260240161016e565b506001600160a01b0381166102ad57604051636ca1fdd760e01b815260040160405180910390fd5b5f80546040516001600160a01b03808516939216917ff8ccb027dfcd135e000e9d45e6cc2d662578a8825d4c45b5e32e0adf67e79ec691a35f80547fffffffffffffffffffffffff0000000000000000000000000000000000000000166001600160a01b0392909216919091179055565b5f5433906001600160a01b031681146103565760405163032efc7560e61b81526001600160a01b03909116600482015260240161016e565b506001600160a01b0382165f81815260016020908152604091829020805460ff191685151590811790915591519182527fc80c123a2acce14e10ca3de8bf2e580f3280c12795d231ef3bf36a19ebc85a63910160405180910390a25050565b80356001600160a01b03811681146103cb575f5ffd5b919050565b5f602082840312156103e0575f5ffd5b6103e9826103b5565b9392505050565b803580151581146103cb575f5ffd5b5f5f5f60408486031215610411575f5ffd5b833567ffffffffffffffff811115610427575f5ffd5b8401601f81018613610437575f5ffd5b803567ffffffffffffffff81111561044d575f5ffd5b8660208260051b8401011115610461575f5ffd5b6020918201945092506104759085016103f0565b90509250925092565b5f5f6040838503121561048f575f5ffd5b610498836103b5565b91506104a6602084016103f0565b90509250929050565b634e487b7160e01b5f52603260045260245ffdfea164736f6c634300081b000a",
+  "deployedBytecode": "0x608060405234801561000f575f5ffd5b506004361061006f575f3560e01c80637b06bc7c1161004d5780637b06bc7c146100db57806382a9f145146100fd578063f851a44014610110575f5ffd5b80632d598d7b14610073578063646cd2e2146100b357806375829def146100c8575b5f5ffd5b61009e6100813660046103d0565b6001600160a01b03165f9081526001602052604090205460ff1690565b60405190151581526020015b60405180910390f35b6100c66100c13660046103ff565b61013a565b005b6100c66100d63660046103d0565b61024d565b61009e6100e93660046103d0565b60016020525f908152604090205460ff1681565b6100c661010b36600461047e565b61031e565b5f54610122906001600160a01b031681565b6040516001600160a01b0390911681526020016100aa565b5f5433906001600160a01b031681146101775760405163032efc7560e61b81526001600160a01b0390911660048201526024015b60405180910390fd5b505f5b82811015610247578160015f868685818110610198576101986104af565b90506020020160208101906101ad91906103d0565b6001600160a01b0316815260208101919091526040015f20805460ff19169115159190911790558383828181106101e6576101e66104af565b90506020020160208101906101fb91906103d0565b6001600160a01b03167fc80c123a2acce14e10ca3de8bf2e580f3280c12795d231ef3bf36a19ebc85a6383604051610237911515815260200190565b60405180910390a260010161017a565b50505050565b5f5433906001600160a01b031681146102855760405163032efc7560e61b81526001600160a01b03909116600482015260240161016e565b506001600160a01b0381166102ad57604051636ca1fdd760e01b815260040160405180910390fd5b5f80546040516001600160a01b03808516939216917ff8ccb027dfcd135e000e9d45e6cc2d662578a8825d4c45b5e32e0adf67e79ec691a35f80547fffffffffffffffffffffffff0000000000000000000000000000000000000000166001600160a01b0392909216919091179055565b5f5433906001600160a01b031681146103565760405163032efc7560e61b81526001600160a01b03909116600482015260240161016e565b506001600160a01b0382165f81815260016020908152604091829020805460ff191685151590811790915591519182527fc80c123a2acce14e10ca3de8bf2e580f3280c12795d231ef3bf36a19ebc85a63910160405180910390a25050565b80356001600160a01b03811681146103cb575f5ffd5b919050565b5f602082840312156103e0575f5ffd5b6103e9826103b5565b9392505050565b803580151581146103cb575f5ffd5b5f5f5f60408486031215610411575f5ffd5b833567ffffffffffffffff811115610427575f5ffd5b8401601f81018613610437575f5ffd5b803567ffffffffffffffff81111561044d575f5ffd5b8660208260051b8401011115610461575f5ffd5b6020918201945092506104759085016103f0565b90509250925092565b5f5f6040838503121561048f575f5ffd5b610498836103b5565b91506104a6602084016103f0565b90509250929050565b634e487b7160e01b5f52603260045260245ffdfea164736f6c634300081b000a",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "title": "AccreditationRegistry — an on-chain allowlist of accredited/KYC'd wallets",
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "notice": "A regulated equity offering issues to a default-deny list of verified investors, not an open public. This registry is the on-chain primitive for that: an admin (the issuer's compliance function, or a delegated KYC provider) marks specific wallets as accredited; nothing else. It does not perform real identity verification itself — that happens off-chain, as it does for every real securities offering — but it gives an issuance module a concrete, auditable gate to check before minting, replacing the \"mint to anyone, block bad actors after the fact\" pattern with \"mint only to wallets explicitly cleared in advance.\"",
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 57547,
+        "contract": "contracts/AccreditationRegistry.sol:AccreditationRegistry",
+        "label": "admin",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_address"
+      },
+      {
+        "astId": 57551,
+        "contract": "contracts/AccreditationRegistry.sol:AccreditationRegistry",
+        "label": "accredited",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_mapping(t_address,t_bool)"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_bool": {
+        "encoding": "inplace",
+        "label": "bool",
+        "numberOfBytes": "1"
+      },
+      "t_mapping(t_address,t_bool)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => bool)",
+        "numberOfBytes": "32",
+        "value": "t_bool"
+      }
+    }
+  }
+}

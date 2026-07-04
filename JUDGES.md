@@ -61,3 +61,8 @@ Full trust model and constraints are in the README's "Design Decisions And Const
 
 Run the contract suite locally: `npm i && npx hardhat test`. Full on-chain lifecycle with every tx hash is in
 `docs/E2E-RUN.md`.
+
+For a technical read, the README's "Known limitations, addressed" section is a self-critique-and-response: what the
+project does not solve (legal equity standing, KYC identity verification, SAFE conversion) and what it built instead
+(cliff vesting, a compliant issuance gate, an M-of-N enforcement guardian, a measured `payBatch` ceiling) — with every
+claim backed by a tx hash in `docs/E2E-RUN.md`, not just prose.

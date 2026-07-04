@@ -92,3 +92,67 @@ A second judge-triggerable resolution was staged so more than one visitor can pe
 
 Resolutions 1 and 2 are both `tallyRequested=true`, `resolved=false` — either can be settled permissionlessly from the
 governance page. Sourcify verification for all five contracts was completed in this pass (see Verification above).
+
+## Fixing six structural limitations (2026-07-04)
+
+A brutally-honest self-review found six real gaps between what Charter claims and what it builds: no vesting/lifecycle
+modeling, no path to a compliant issuance gate, unilateral single-key force-transfer dressed as "compliance," an
+amount-vs-identity privacy mismatch, an unbenchmarked batch-size claim, and over-claiming "cap table" against a
+production competitor. Three new modules were built, tested (11 new tests, 41 total), deployed, verified on both
+explorers, and exercised live on Sepolia with real transactions below. The privacy-model and positioning gaps were fixed
+by precise re-scoping in this document and the README, not new code — see "Design Decisions and Constraints."
+
+### Confidential vesting (`VestingSchedule`)
+
+The cliff-and-linear vesting mechanic every real cap table is built around; previously entirely absent.
+
+| Step                                        | Detail                                                                 | Tx                                                                                                                                                                       |
+| ------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Issuer approves VestingSchedule as operator | `setOperator` on CharterShares                                         | (see grant tx below; same transaction batch)                                                                                                                             |
+| Grant created                               | 50,000 encrypted shares escrowed, 30-block cliff, 120-block total vest | [0x290c9ccfe54aec0d3eac94e7a18091d2bcfbb7e014cbda02ff6b929b32c77ecc](https://sepolia.etherscan.io/tx/0x290c9ccfe54aec0d3eac94e7a18091d2bcfbb7e014cbda02ff6b929b32c77ecc) |
+
+### Gated issuance (`AccreditationRegistry` + `GatedIssuance`)
+
+The default-deny compliant counterpart to the open `DemoShareFaucet`: mints only to wallets an admin has explicitly
+accredited.
+
+| Step              | Detail                                                      | Tx                                                                                                                                                                       |
+| ----------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Wallet accredited | Registry admin marks a wallet eligible                      | [0xf2f267215fc7c7f87cec1a6d61298b257570e19be6a89dc77f6111e9556d48b7](https://sepolia.etherscan.io/tx/0xf2f267215fc7c7f87cec1a6d61298b257570e19be6a89dc77f6111e9556d48b7) |
+| Gated mint        | 25,000 encrypted shares minted to the now-accredited wallet | [0x65f76e257f727fa64525493c4466b136ac1cfd9777e0288d476154913fea3d4e](https://sepolia.etherscan.io/tx/0x65f76e257f727fa64525493c4466b136ac1cfd9777e0288d476154913fea3d4e) |
+
+A mint attempt to a non-accredited wallet reverts with `IssuanceNotAccredited` before the gate is granted — verified in
+the test suite.
+
+### Force-transfer guardian (`ForceTransferGuardian`)
+
+Replaces a single agent's silent, unilateral `forceConfidentialTransferFrom` with a 2-of-3 guardian quorum, a public
+reason, and a 30-block timelock before anyone can execute. The demo's three guardian keys are derived from the same
+mnemonic for convenience — a real deployment would assign each guardian to an independently-held key so no single party
+controls quorum. Guardians were funded with a small amount of Sepolia ETH to submit these transactions.
+
+| Step                       | Detail                                                                                              | Tx                                                                                                                                                                       |
+| -------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Guardian 1 funded          | 0.01 ETH for gas                                                                                    | [0x85ab3120cced208a129c7bff2a5c4b32bb9f1468f87bf5d40658feedeccda8e4](https://sepolia.etherscan.io/tx/0x85ab3120cced208a129c7bff2a5c4b32bb9f1468f87bf5d40658feedeccda8e4) |
+| Guardian 2 funded          | 0.01 ETH for gas                                                                                    | [0x0e6099d41e4ba8082579e8cf4d54fc09afb1cf8349a6c309223ebf2ab05617d2](https://sepolia.etherscan.io/tx/0x0e6099d41e4ba8082579e8cf4d54fc09afb1cf8349a6c309223ebf2ab05617d2) |
+| Proposed                   | 5,000 encrypted shares, reason: "Demo enforcement action: recover shares from a compromised wallet" | [0x6352a7fad528cbfd220481830f94c706772525d61a1e575231b248728990d7a3](https://sepolia.etherscan.io/tx/0x6352a7fad528cbfd220481830f94c706772525d61a1e575231b248728990d7a3) |
+| Confirmed (quorum reached) | 2-of-3 guardians confirmed; timelock started                                                        | [0x44b3d038686b39217711ec1e1388afb86edac0735507929dd2689a7e2df25e9e](https://sepolia.etherscan.io/tx/0x44b3d038686b39217711ec1e1388afb86edac0735507929dd2689a7e2df25e9e) |
+| Executed after timelock    | Shares moved only after quorum + delay                                                              | [0x2b668cbce2948e8307934c127d2b3e73c2d2bfb739543b4c2cb0bbe061e6c208](https://sepolia.etherscan.io/tx/0x2b668cbce2948e8307934c127d2b3e73c2d2bfb739543b4c2cb0bbe061e6c208) |
+
+### `payBatch` real batch-size benchmark
+
+The README previously hedged "designed for roughly 15 investors per transaction; not yet benchmarked." Probing with
+`staticCall` found the real per-transaction ceiling for this distribution: **12 investors succeeds, 13 reverts** (a
+coprocessor-level custom error, selector `0x77e3c293` — not one of Charter's own declared errors; root cause not further
+identified, stated honestly rather than guessed). Measured gas, cross-checked against the round-two 3-investor batch
+(1,191,296 gas, ~397k/investor):
+
+| Batch size                       | Gas used  | Tx                                                                                                                                                                       |
+| -------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 5 investors                      | 1,961,644 | [0x8bf67681fd79074ad43c0aa084f4fb25e619c74109617a56df378b9ccceff493](https://sepolia.etherscan.io/tx/0x8bf67681fd79074ad43c0aa084f4fb25e619c74109617a56df378b9ccceff493) |
+| 12 investors (confirmed ceiling) | 4,570,000 | [0x06a3c2a3ad630b535cc0afd4dcf283067405681d6700c3a5ffa966f94dd2b6f7](https://sepolia.etherscan.io/tx/0x06a3c2a3ad630b535cc0afd4dcf283067405681d6700c3a5ffa966f94dd2b6f7) |
+| 3 investors (remainder)          | 1,216,397 | [0xcdc540964d59a8ace17fcc378a1dd763b2e48a35d8d5fd83bfb05b3bc0f3df21](https://sepolia.etherscan.io/tx/0xcdc540964d59a8ace17fcc378a1dd763b2e48a35d8d5fd83bfb05b3bc0f3df21) |
+
+Implied marginal cost: ~372,600 gas per additional investor (consistent with the independent round-two data point). At
+current Sepolia gas prices (~1 gwei) a 12-investor batch costs a small fraction of a cent; the binding constraint is the
+per-transaction compute budget, not cost.
