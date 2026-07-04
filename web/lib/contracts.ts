@@ -8,6 +8,10 @@ export const ADDRESSES = {
   resolutions: process.env.NEXT_PUBLIC_RESOLUTIONS_ADDRESS ?? ZERO_ADDRESS,
   tender: process.env.NEXT_PUBLIC_TENDER_ADDRESS ?? ZERO_ADDRESS,
   demoFaucet: process.env.NEXT_PUBLIC_DEMO_FAUCET_ADDRESS ?? ZERO_ADDRESS,
+  vesting: process.env.NEXT_PUBLIC_VESTING_ADDRESS ?? ZERO_ADDRESS,
+  registry: process.env.NEXT_PUBLIC_REGISTRY_ADDRESS ?? ZERO_ADDRESS,
+  gatedIssuance: process.env.NEXT_PUBLIC_GATED_ISSUANCE_ADDRESS ?? ZERO_ADDRESS,
+  guardian: process.env.NEXT_PUBLIC_GUARDIAN_ADDRESS ?? ZERO_ADDRESS,
 } as const;
 
 export const CONTRACTS_CONFIGURED = ADDRESSES.shares !== ZERO_ADDRESS;
@@ -85,6 +89,35 @@ export const TENDER_ABI = [
   "function requestTotal(uint256 id)",
   "function settleTotal(uint256 id, uint64 clearTotal, bytes decryptionProof)",
   "function claim(uint256 id, address[] holders)",
+] as const;
+
+export const VESTING_ABI = [
+  "function grantCount() view returns (uint256)",
+  "function getGrant(uint256 id) view returns (tuple(address beneficiary, bytes32 total, bytes32 released, uint48 start, uint48 cliff, uint48 vestingEnd, bool revoked))",
+  "function vestingProgress(uint256 id) view returns (uint48 elapsed, uint48 duration)",
+  "function createGrant(address beneficiary, bytes32 encryptedTotal, bytes inputProof, uint48 cliffDelay, uint48 vestingDuration) returns (uint256)",
+  "function claim(uint256 id)",
+  "function revoke(uint256 id)",
+] as const;
+
+export const REGISTRY_ABI = [
+  "function isAccredited(address account) view returns (bool)",
+  "function setAccredited(address account, bool status)",
+  "function admin() view returns (address)",
+] as const;
+
+export const GATED_ISSUANCE_ABI = ["function issue(address to, bytes32 encryptedAmount, bytes inputProof)"] as const;
+
+export const GUARDIAN_ABI = [
+  "function THRESHOLD() view returns (uint32)",
+  "function TIMELOCK() view returns (uint48)",
+  "function isGuardian(address account) view returns (bool)",
+  "function proposalCount() view returns (uint256)",
+  "function getProposal(uint256 id) view returns (tuple(address from, address to, bytes32 amount, string reason, uint48 readyAt, uint32 confirmations, bool executed))",
+  "function confirmedBy(uint256 id, address guardian) view returns (bool)",
+  "function propose(address from, address to, bytes32 encryptedAmount, bytes inputProof, string reason) returns (uint256)",
+  "function confirm(uint256 id)",
+  "function execute(uint256 id)",
 ] as const;
 
 export const ZERO_HANDLE = ("0x" + "0".repeat(64)) as `0x${string}`;

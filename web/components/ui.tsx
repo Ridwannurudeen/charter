@@ -242,6 +242,12 @@ export function errorText(error: unknown, fallback = "unknown error"): string {
   if (message.includes("DistributorStaleSupply")) return "Re-run supply disclosure after issuance before declaring.";
   if (message.includes("NotIssuer")) return "Connect with the issuer admin or agent wallet.";
   if (message.includes("AlreadyClaimed")) return "This wallet has already claimed demo shares.";
+  if (message.includes("IssuanceNotAccredited")) return "This wallet has not been accredited yet.";
+  if (message.includes("VestingAlreadyRevoked")) return "This vesting grant has already been revoked.";
+  if (message.includes("VestingNotBeneficiary")) return "Only the grant beneficiary can claim vested shares.";
+  if (message.includes("GuardianNotGuardian")) return "Connect with a guardian wallet to perform this action.";
+  if (message.includes("GuardianQuorumNotReached")) return "Guardian quorum has not been reached yet.";
+  if (message.includes("GuardianTimelockNotElapsed")) return "The timelock has not elapsed yet.";
   return message.slice(0, 180);
 }
 

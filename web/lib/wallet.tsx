@@ -7,11 +7,15 @@ import {
   ADDRESSES,
   DEMO_FAUCET_ABI,
   DISTRIBUTOR_ABI,
+  GATED_ISSUANCE_ABI,
+  GUARDIAN_ABI,
   MCUSD_ABI,
+  REGISTRY_ABI,
   RESOLUTIONS_ABI,
   SEPOLIA_CHAIN_ID,
   SHARES_ABI,
   TENDER_ABI,
+  VESTING_ABI,
 } from "./contracts";
 
 type WalletState = {
@@ -27,6 +31,10 @@ type WalletState = {
   distributor: Contract | null;
   resolutions: Contract | null;
   tender: Contract | null;
+  vesting: Contract | null;
+  registry: Contract | null;
+  gatedIssuance: Contract | null;
+  guardian: Contract | null;
   isAdmin: boolean;
   isAgent: boolean;
   refreshRoles: () => Promise<void>;
@@ -121,6 +129,22 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     () => (signer && onSepolia ? new Contract(ADDRESSES.tender, TENDER_ABI, signer) : null),
     [signer, onSepolia],
   );
+  const vesting = useMemo(
+    () => (signer && onSepolia ? new Contract(ADDRESSES.vesting, VESTING_ABI, signer) : null),
+    [signer, onSepolia],
+  );
+  const registry = useMemo(
+    () => (signer && onSepolia ? new Contract(ADDRESSES.registry, REGISTRY_ABI, signer) : null),
+    [signer, onSepolia],
+  );
+  const gatedIssuance = useMemo(
+    () => (signer && onSepolia ? new Contract(ADDRESSES.gatedIssuance, GATED_ISSUANCE_ABI, signer) : null),
+    [signer, onSepolia],
+  );
+  const guardian = useMemo(
+    () => (signer && onSepolia ? new Contract(ADDRESSES.guardian, GUARDIAN_ABI, signer) : null),
+    [signer, onSepolia],
+  );
 
   const refreshRoles = useCallback(async () => {
     if (!shares || !address) {
@@ -158,6 +182,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       distributor,
       resolutions,
       tender,
+      vesting,
+      registry,
+      gatedIssuance,
+      guardian,
       isAdmin,
       isAgent,
       refreshRoles,
@@ -175,6 +203,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       distributor,
       resolutions,
       tender,
+      vesting,
+      registry,
+      gatedIssuance,
+      guardian,
       isAdmin,
       isAgent,
       refreshRoles,

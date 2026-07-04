@@ -16,6 +16,9 @@ const TABS = [
   { href: "/investor", label: "Investor" },
   { href: "/governance", label: "Governance" },
   { href: "/tender", label: "Buyback" },
+  { href: "/vesting", label: "Vesting" },
+  { href: "/compliance", label: "Compliance" },
+  { href: "/guardian", label: "Guardian" },
   { href: "/auditor", label: "Auditor" },
 ];
 
@@ -24,6 +27,11 @@ const ADDRESS_LINKS = [
   { label: "mcUSD", address: ADDRESSES.mcUSD },
   { label: "Distributor", address: ADDRESSES.distributor },
   { label: "Resolutions", address: ADDRESSES.resolutions },
+  { label: "Tender", address: ADDRESSES.tender },
+  { label: "Vesting", address: ADDRESSES.vesting },
+  { label: "Registry", address: ADDRESSES.registry },
+  { label: "Gated", address: ADDRESSES.gatedIssuance },
+  { label: "Guardian", address: ADDRESSES.guardian },
 ];
 
 type Theme = "light" | "dark";
@@ -59,7 +67,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Logo />
               <span className="font-display text-xl font-semibold tracking-[-0.03em]">Charter</span>
             </Link>
-            <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
+            <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Primary">
               {TABS.map((tab) => {
                 const active = pathname.startsWith(tab.href);
                 return (
@@ -68,7 +76,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     href={tab.href}
                     prefetch={false}
                     aria-current={active ? "page" : undefined}
-                    className={`group relative rounded-md px-3 py-2 text-sm transition-colors duration-200 ${
+                    className={`group relative rounded-md px-2.5 py-2 text-sm transition-colors duration-200 ${
                       active ? "text-foreground" : "text-muted hover:text-foreground"
                     }`}
                   >
@@ -121,7 +129,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <nav
-          className="flex items-center gap-1 overflow-x-auto border-t border-line px-3 py-2 md:hidden"
+          className="flex items-center gap-1 overflow-x-auto border-t border-line px-3 py-2 lg:hidden"
           aria-label="Primary mobile"
         >
           {TABS.map((tab) => {

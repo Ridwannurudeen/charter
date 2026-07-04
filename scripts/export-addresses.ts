@@ -10,6 +10,10 @@ const ARTIFACTS = [
   ["CharterResolutionsV3", "NEXT_PUBLIC_RESOLUTIONS_ADDRESS"],
   ["ConfidentialTenderOffer", "NEXT_PUBLIC_TENDER_ADDRESS"],
   ["DemoShareFaucet", "NEXT_PUBLIC_DEMO_FAUCET_ADDRESS"],
+  ["VestingSchedule", "NEXT_PUBLIC_VESTING_ADDRESS"],
+  ["AccreditationRegistry", "NEXT_PUBLIC_REGISTRY_ADDRESS"],
+  ["GatedIssuance", "NEXT_PUBLIC_GATED_ISSUANCE_ADDRESS"],
+  ["ForceTransferGuardian", "NEXT_PUBLIC_GUARDIAN_ADDRESS"],
 ] as const;
 
 type DeploymentArtifact = {
