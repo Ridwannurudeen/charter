@@ -4,7 +4,7 @@ import { ZeroAddress } from "ethers";
 import { useCallback, useEffect, useState } from "react";
 
 import { AppShell, ConnectGate } from "@/components/AppShell";
-import { Badge, Button, Callout, Card, Field, Input, TxLink, errorText, txHashFrom } from "@/components/ui";
+import { Badge, Button, Callout, Card, Field, Input, PageHeader, TxLink, errorText, txHashFrom } from "@/components/ui";
 import { ADDRESSES, CONTRACTS_CONFIGURED, ZERO_HANDLE } from "@/lib/contracts";
 import { encryptBool, publicDecrypt } from "@/lib/fhevm";
 import { useWallet } from "@/lib/wallet";
@@ -129,10 +129,10 @@ function Governance() {
         const updated = await resolutions!.getResolution(row.id);
         passedHandle = updated.passedHandle;
         quorumReached = updated.quorumReached;
-        // Below quorum, requestTally already resolves the resolution as rejected — nothing to decrypt.
+        // Below quorum, requestTally already resolves the resolution as rejected - nothing to decrypt.
         if (updated.resolved) return tx;
       }
-      if (!quorumReached) throw new Error("quorum not reached — no outcome to settle");
+      if (!quorumReached) throw new Error("quorum not reached - no outcome to settle");
 
       const result = await publicDecrypt(eip1193!, [passedHandle]);
       const passed = result.clearValues[passedHandle];
@@ -143,16 +143,19 @@ function Governance() {
   const hasVotingPowerHandle = shareHandle !== null && shareHandle !== ZERO_HANDLE;
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Shareholder resolutions</h1>
-        <p className="mt-1 text-sm text-muted">
-          Your choice and weight are encrypted end-to-end and never disclosed. Only the resolution&apos;s pass/fail
-          outcome is revealed, proven on-chain by a KMS decryption proof. Who voted is public; how they voted is not.
-          Any shareholder with active voting power can propose a resolution — not just the issuer.
-          {minVoters > 0 && ` A resolution needs at least ${minVoters} voters to reach quorum before it can settle.`}
-        </p>
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        eyebrow="Governance"
+        title="Vote privately. Reveal only the outcome."
+        description={
+          <>
+            Your choice and weight are encrypted end-to-end and never disclosed. Only the resolution&apos;s pass/fail
+            outcome is revealed, proven on-chain by a KMS decryption proof. Who voted is public; how they voted is not.
+            Any shareholder with active voting power can propose a resolution - not just the issuer.
+            {minVoters > 0 && ` A resolution needs at least ${minVoters} voters to reach quorum before it can settle.`}
+          </>
+        }
+      />
 
       {!votingActive && (
         <Callout tone="info">
@@ -178,8 +181,10 @@ function Governance() {
 
       {(isAdmin || isAgent || votingActive) && (
         <Card
+          eyebrow="Open proposal"
           title="Propose a resolution"
           subtitle="Any shareholder with active voting power can open a resolution. Voting power snapshots at the current block; voting opens immediately after."
+          variant="feature"
         >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <div className="flex-1">
@@ -208,8 +213,18 @@ function Governance() {
         </Card>
       )}
 
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow text-cipher">Resolution feed</p>
+          <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em]">
+            Encrypted votes, public settlement.
+          </h2>
+        </div>
+        <Badge tone="muted">Current block {clock.toLocaleString("en-US")}</Badge>
+      </div>
+
       {loading ? (
-        <Card>
+        <Card variant="raised">
           <div className="flex flex-col gap-3">
             <div className="skeleton h-24 rounded-md" />
             <div className="skeleton h-24 rounded-md" />
@@ -217,14 +232,14 @@ function Governance() {
           </div>
         </Card>
       ) : rows.length === 0 ? (
-        <Card>
+        <Card variant="raised">
           <p className="py-8 text-center text-sm text-faint">No resolutions yet.</p>
         </Card>
       ) : (
         rows.map((row) => {
           const open = clock <= row.deadline;
           return (
-            <Card key={row.id}>
+            <Card key={row.id} variant="raised">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -240,17 +255,17 @@ function Governance() {
                     )}
                     {row.voted && <Badge tone="muted">You voted</Badge>}
                   </div>
-                  <h3 className="mt-2 font-semibold">{row.description}</h3>
-                  <p className="mt-1 text-xs text-muted">
+                  <h3 className="mt-3 font-display text-2xl font-semibold tracking-[-0.03em]">{row.description}</h3>
+                  <p className="mt-2 text-xs text-muted">
                     Snapshot block {row.snapshot.toLocaleString("en-US")} - closes at block{" "}
                     {row.deadline.toLocaleString("en-US")}
                     {open && ` - current ${clock.toLocaleString("en-US")}`}
                   </p>
-                  <p className="mt-1 text-xs text-faint">
+                  <p className="mt-2 text-xs text-faint">
                     {row.voterCount.toLocaleString("en-US")} {row.voterCount === 1 ? "voter" : "voters"}
                     {minVoters > 0 && ` - quorum needs ${minVoters}`}
                   </p>
-                  <p className="mt-3 text-sm text-muted">
+                  <p className="mt-4 rounded-md border border-line bg-background/45 px-3 py-2 text-sm text-muted">
                     {row.resolved
                       ? row.quorumReached
                         ? `Final outcome: ${row.passed ? "Passed" : "Rejected"}. Exact vote weights remain encrypted.`
@@ -264,6 +279,7 @@ function Governance() {
                   {open && !row.voted && (
                     <>
                       <Button
+                        size="sm"
                         className="h-10"
                         disabled={!votingActive || !hasVotingPowerHandle}
                         onClick={() => vote(row.id, true)}
@@ -272,6 +288,7 @@ function Governance() {
                       </Button>
                       <Button
                         variant="danger"
+                        size="sm"
                         className="h-10"
                         disabled={!votingActive || !hasVotingPowerHandle}
                         onClick={() => vote(row.id, false)}
@@ -281,7 +298,7 @@ function Governance() {
                     </>
                   )}
                   {!open && !row.resolved && (
-                    <Button variant="ghost" className="h-10" onClick={() => settle(row)}>
+                    <Button variant="ghost" size="sm" className="h-10" onClick={() => settle(row)}>
                       Settle with proof
                     </Button>
                   )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { EyeOff, LockKeyhole, RotateCcw } from "lucide-react";
 import { useState } from "react";
 
 import { ZERO_HANDLE } from "@/lib/contracts";
@@ -9,9 +10,9 @@ import { useWallet } from "@/lib/wallet";
 import { Spinner } from "./ui";
 
 /**
- * The signature interaction: an encrypted on-chain value shown as shimmering
- * ciphertext until the holder authorizes an EIP-712 user decryption, then the
- * cleartext reveals in place. Decryption happens client-side; nothing is
+ * The signature interaction: an encrypted on-chain value shown as a redacted
+ * ciphertext bar until the holder authorizes an EIP-712 user decryption, then
+ * the cleartext reveals in place. Decryption happens client-side; nothing is
  * published.
  */
 export function EncryptedValue({
@@ -36,21 +37,22 @@ export function EncryptedValue({
   const [error, setError] = useState<string | null>(null);
 
   if (!handle || handle === ZERO_HANDLE) {
-    return <span className="text-sm text-faint">{emptyText}</span>;
+    return <span className="text-sm leading-relaxed text-faint">{emptyText}</span>;
   }
 
   if (clear !== null) {
     return (
       <span className="inline-flex flex-wrap items-center gap-3">
-        <span className="reveal-in font-mono text-lg text-foreground tabular">
+        <span className="reveal-in font-mono text-2xl font-semibold text-foreground tabular">
           {format(clear)}
-          {suffix && <span className="ml-1 text-sm text-muted">{suffix}</span>}
+          {suffix && <span className="ml-2 text-sm font-normal text-muted">{suffix}</span>}
         </span>
         <button
           type="button"
           onClick={() => setClear(null)}
-          className="inline-flex h-8 cursor-pointer items-center rounded-md border border-line px-2.5 text-xs text-muted transition-colors duration-150 hover:border-primary hover:text-primary-bright focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-line bg-surface-2 px-3 text-xs font-medium text-muted transition-colors duration-150 hover:border-cipher hover:text-cipher"
         >
+          <EyeOff className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
           Hide
         </button>
       </span>
@@ -77,33 +79,24 @@ export function EncryptedValue({
 
   return (
     <span className="inline-flex flex-wrap items-center gap-3">
-      <span className="cipher font-mono text-sm" aria-label="encrypted value">
-        {handle.slice(2, 18)}...
+      <span className="inline-flex items-center gap-2 rounded-md border border-cipher/25 bg-cipher/5 px-3 py-2">
+        <LockKeyhole className="h-4 w-4 text-cipher" strokeWidth={1.75} aria-hidden="true" />
+        <span className="cipher h-5 w-36 font-mono text-sm" aria-label="encrypted value">
+          {handle.slice(2, 18)}...
+        </span>
       </span>
       <button
         onClick={decrypt}
         disabled={busy}
-        className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-primary/40 px-2.5 text-xs font-medium text-primary-bright transition-colors duration-150 hover:bg-primary/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
+        className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-cipher/40 bg-surface-2 px-3 text-xs font-semibold text-cipher transition-colors duration-150 hover:bg-cipher/10 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {busy ? (
-          <Spinner />
-        ) : (
-          <svg
-            className="h-3.5 w-3.5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            aria-hidden="true"
-          >
-            <rect x="5" y="11" width="14" height="9" rx="2" />
-            <path d="M8 11V7a4 4 0 018 0" />
-          </svg>
-        )}
+        {busy ? <Spinner /> : <RotateCcw className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />}
         {busy ? busyLabel : label}
       </button>
       {!busy && (
-        <span className="text-xs text-faint">One EIP-712 signature authorizes a 1-day private decryption session.</span>
+        <span className="max-w-sm text-xs leading-relaxed text-faint">
+          One EIP-712 signature authorizes a 1-day private decryption session.
+        </span>
       )}
       {error && <span className="text-xs text-danger">{error}</span>}
     </span>

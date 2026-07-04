@@ -10,6 +10,7 @@ import {
   Card,
   Field,
   Input,
+  PageHeader,
   Stat,
   TxLink,
   errorText,
@@ -111,7 +112,12 @@ function IssuerConsole() {
   const issuerAuthorized = isAdmin || isAgent;
 
   const distributionHistory = (
-    <Card title="Distribution history" subtitle="Pool totals are public by design; the payouts inside them are not.">
+    <Card
+      eyebrow="Dividend ledger"
+      title="Distribution history"
+      subtitle="Pool totals are public by design; the payouts inside them are not."
+      variant="raised"
+    >
       {loading ? (
         <div className="flex flex-col gap-3">
           <div className="skeleton h-9 rounded-md" />
@@ -136,26 +142,30 @@ function IssuerConsole() {
   );
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Issuer console</h1>
-          <p className="mt-1 text-sm text-muted">
-            Allocations are encrypted in your browser; the chain computes on ciphertext.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <Stat
-            label="Shares on record"
-            value={totalOnRecord > 0n ? totalOnRecord.toLocaleString("en-US") : "not disclosed"}
-          />
-          <Stat label="Supply disclosure" value={supplyStale ? "stale" : "current"} />
-          <Stat
-            label="Transfers"
-            value={paused ? <Badge tone="danger">Paused</Badge> : <Badge tone="success">Live</Badge>}
-            mono={false}
-          />
-        </div>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        eyebrow="Issuer console"
+        title="Operate the encrypted registry."
+        description={<>Allocations are encrypted in your browser; the chain computes on ciphertext.</>}
+      />
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Stat
+          label="Shares on record"
+          value={totalOnRecord > 0n ? totalOnRecord.toLocaleString("en-US") : "not disclosed"}
+          trend="KMS-proven aggregate"
+        />
+        <Stat
+          label="Supply disclosure"
+          value={supplyStale ? "stale" : "current"}
+          trend="Blocks new declarations if stale"
+        />
+        <Stat
+          label="Transfers"
+          value={paused ? <Badge tone="danger">Paused</Badge> : <Badge tone="success">Live</Badge>}
+          mono={false}
+          trend="Record-date control"
+        />
       </div>
 
       {!issuerAuthorized && (
@@ -184,7 +194,12 @@ function IssuerConsole() {
 
       {issuerAuthorized && (
         <div className="grid gap-6 lg:grid-cols-2">
-          <Card title="Issue shares" subtitle="Allocations are encrypted client-side. The chain never sees the amount.">
+          <Card
+            eyebrow="Issuance"
+            title="Issue shares"
+            subtitle="Allocations are encrypted client-side. The chain never sees the amount."
+            variant="feature"
+          >
             <div className="flex flex-col gap-4">
               <Field label="Investor wallet">
                 <Input placeholder="0x..." value={mintTo} onChange={(e) => setMintTo(e.target.value)} />
@@ -217,8 +232,10 @@ function IssuerConsole() {
           </Card>
 
           <Card
+            eyebrow="Public denominator"
             title="Supply disclosure"
             subtitle="Publish the total issued shares with a KMS decryption proof, verified on-chain. This becomes the denominator for pro-rata distributions."
+            variant="raised"
           >
             <div className="flex flex-col gap-3">
               <Button
@@ -245,6 +262,7 @@ function IssuerConsole() {
           </Card>
 
           <Card
+            eyebrow="Dividend declaration"
             title="Declare a distribution"
             subtitle="The pool total is public and verifiable; every individual payout stays encrypted. Demo funds are minted by the mcUSD test token and pulled by the distributor."
           >
@@ -283,6 +301,7 @@ function IssuerConsole() {
           </Card>
 
           <Card
+            eyebrow="Batch execution"
             title="Pay a distribution"
             subtitle="Shares must remain paused from declare through payBatch. Keep batches to ~15 investors per transaction."
           >
@@ -327,7 +346,11 @@ function IssuerConsole() {
             </div>
           </Card>
 
-          <Card title="Compliance" subtitle="Restrict a wallet from transferring, or lift a restriction.">
+          <Card
+            eyebrow="Compliance"
+            title="Compliance"
+            subtitle="Restrict a wallet from transferring, or lift a restriction."
+          >
             <div className="flex flex-col gap-4">
               <Field label="Wallet">
                 <Input placeholder="0x..." value={restrictAddr} onChange={(e) => setRestrictAddr(e.target.value)} />

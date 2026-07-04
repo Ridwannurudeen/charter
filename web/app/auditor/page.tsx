@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { AppShell, ConnectGate } from "@/components/AppShell";
 import { EncryptedValue } from "@/components/EncryptedValue";
-import { Badge, Button, Callout, Card, Field, Input, errorText, shortAddress } from "@/components/ui";
+import { Badge, Button, Callout, Card, Field, Input, PageHeader, errorText, shortAddress } from "@/components/ui";
 import { ADDRESSES, CONTRACTS_CONFIGURED } from "@/lib/contracts";
 import { useWallet } from "@/lib/wallet";
 
@@ -140,19 +140,27 @@ function AuditorConsole() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Auditor view</h1>
-        <p className="mt-1 text-sm text-muted">
-          Holders appoint you as observer; you decrypt exactly what they granted - their share balances and transfer
-          amounts. Nothing else, nobody else.
-        </p>
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        eyebrow="Auditor view"
+        title="Inspect only what a holder grants."
+        description={
+          <>
+            Holders appoint you as observer; you decrypt exactly what they granted - their share balances and transfer
+            amounts. Nothing else, nobody else.
+          </>
+        }
+      />
 
       {error && <Callout tone="error">{error}</Callout>}
       {notice && <Callout tone={notice.includes("not appointed") ? "info" : "success"}>{notice}</Callout>}
 
-      <Card title="Inspect account" subtitle="Verify observer access before attempting any decryption.">
+      <Card
+        eyebrow="Access check"
+        title="Inspect account"
+        subtitle="Verify observer access before attempting any decryption."
+        variant="feature"
+      >
         <form onSubmit={inspect} className="flex flex-col gap-4 sm:flex-row sm:items-end">
           <div className="flex-1">
             <Field label="Holder wallet">
@@ -180,8 +188,10 @@ function AuditorConsole() {
       </Card>
 
       <Card
+        eyebrow="Saved observer set"
         title="Portfolio"
         subtitle="Verified accounts are saved in this browser so repeated checks do not start from scratch."
+        variant="raised"
       >
         {loadingPortfolio ? (
           <div className="flex flex-col gap-3">
@@ -222,7 +232,7 @@ function AuditorConsole() {
                 <button
                   type="button"
                   onClick={() => remove(row.account)}
-                  className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border border-line text-muted transition-colors duration-150 hover:border-danger/60 hover:text-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-md border border-line bg-surface-2 text-muted transition-colors duration-150 hover:border-danger/60 hover:text-danger"
                   aria-label={`Remove ${shortAddress(row.account)} from auditor portfolio`}
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

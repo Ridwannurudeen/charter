@@ -1,24 +1,36 @@
 "use client";
 
+import { CheckCircle2, ExternalLink, Info, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 
 export function Card({
   title,
   subtitle,
+  eyebrow,
+  variant = "flat",
   children,
   className = "",
 }: {
   title?: string;
   subtitle?: string;
+  eyebrow?: string;
+  variant?: "flat" | "raised" | "feature";
   children: React.ReactNode;
   className?: string;
 }) {
+  const styles = {
+    flat: "border-line bg-surface",
+    raised: "border-line-strong bg-surface-2 shadow-[var(--shadow-1)]",
+    feature: "border-line-strong bg-surface-2 surface-hairline",
+  }[variant];
+
   return (
-    <section className={`rounded-xl border border-line bg-surface p-5 sm:p-6 ${className}`}>
-      {title && (
-        <header className="mb-4">
-          <h2 className="text-base font-semibold text-foreground">{title}</h2>
-          {subtitle && <p className="mt-1 text-sm text-muted leading-relaxed">{subtitle}</p>}
+    <section className={`rounded-lg border p-5 sm:p-6 ${styles} ${className}`}>
+      {(title || eyebrow) && (
+        <header className="mb-5">
+          {eyebrow && <p className="eyebrow mb-2 text-cipher">{eyebrow}</p>}
+          {title && <h2 className="font-display text-xl font-semibold tracking-[-0.02em] text-foreground">{title}</h2>}
+          {subtitle && <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">{subtitle}</p>}
         </header>
       )}
       {children}
@@ -30,23 +42,32 @@ export function Button({
   children,
   onClick,
   variant = "primary",
+  size = "md",
   disabled,
   type = "button",
   className = "",
 }: {
   children: React.ReactNode;
   onClick?: () => void | Promise<void>;
-  variant?: "primary" | "ghost" | "danger";
+  variant?: "primary" | "ghost" | "danger" | "quiet";
+  size?: "sm" | "md";
   disabled?: boolean;
   type?: "button" | "submit";
   className?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const styles = {
-    primary: "bg-primary text-on-primary hover:bg-primary-bright disabled:hover:bg-primary font-semibold",
-    ghost: "border border-line-strong text-foreground hover:border-primary hover:text-primary-bright",
-    danger: "border border-danger/50 text-danger hover:bg-danger/10",
+    primary:
+      "bg-primary text-on-primary shadow-[0_1px_0_rgba(255,255,255,0.18)_inset,0_12px_32px_-22px_var(--primary)] hover:bg-primary-bright hover:shadow-[0_1px_0_rgba(255,255,255,0.2)_inset,0_18px_44px_-24px_var(--primary)]",
+    ghost:
+      "border border-line-strong bg-surface-2 text-foreground hover:border-cipher hover:text-cipher hover:shadow-[var(--shadow-1)]",
+    danger: "border border-danger/45 bg-danger/5 text-danger hover:bg-danger/10 hover:border-danger/70",
+    quiet: "text-muted hover:bg-surface-2 hover:text-foreground",
   }[variant];
+  const sizes = {
+    sm: "h-9 px-3 text-xs",
+    md: "h-11 px-4 text-sm",
+  }[size];
 
   return (
     <button
@@ -63,7 +84,7 @@ export function Button({
           }
         })
       }
-      className={`inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-lg px-4 text-sm transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-45 ${styles} ${className}`}
+      className={`inline-flex min-w-11 cursor-pointer items-center justify-center gap-2 rounded-md font-semibold transition-[background,border-color,color,box-shadow,transform] duration-200 ease-[var(--ease-out)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-45 ${sizes} ${styles} ${className}`}
     >
       {busy && <Spinner />}
       {children}
@@ -83,27 +104,74 @@ export function Spinner() {
 export function Field({ label, helper, children }: { label: string; helper?: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-foreground">{label}</span>
+      <span className="eyebrow mb-2 block text-faint">{label}</span>
       {children}
-      {helper && <span className="mt-1.5 block text-xs text-muted">{helper}</span>}
+      {helper && <span className="mt-2 block text-xs leading-relaxed text-muted">{helper}</span>}
     </label>
   );
 }
 
 export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  const numeric = props.inputMode === "numeric" || props.type === "number";
   return (
     <input
       {...props}
-      className={`h-11 w-full rounded-lg border border-line bg-background px-3 text-sm text-foreground placeholder:text-faint focus:border-primary focus:outline-none ${props.className ?? ""}`}
+      className={`h-11 w-full rounded-md border border-line bg-background/55 px-3 text-sm text-foreground placeholder:text-faint transition-colors duration-150 focus:border-cipher focus:outline-none ${
+        numeric ? "font-mono tabular" : ""
+      } ${props.className ?? ""}`}
     />
   );
 }
 
-export function Stat({ label, value, mono = true }: { label: string; value: React.ReactNode; mono?: boolean }) {
+export function PageHeader({
+  eyebrow,
+  title,
+  description,
+  actions,
+  className = "",
+}: {
+  eyebrow: string;
+  title: string;
+  description: React.ReactNode;
+  actions?: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="rounded-lg border border-line bg-raised px-4 py-3">
-      <div className="text-xs uppercase tracking-wide text-muted">{label}</div>
-      <div className={`mt-1 text-lg text-foreground ${mono ? "font-mono tabular" : ""}`}>{value}</div>
+    <header className={`flex flex-col gap-5 py-4 sm:py-6 lg:flex-row lg:items-end lg:justify-between ${className}`}>
+      <div>
+        <p className="eyebrow text-cipher">{eyebrow}</p>
+        <h1 className="mt-3 max-w-4xl font-display text-4xl font-semibold leading-[1.05] tracking-[-0.035em] text-foreground sm:text-5xl">
+          {title}
+        </h1>
+        <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted">{description}</p>
+      </div>
+      {actions && <div className="flex shrink-0 flex-wrap gap-3">{actions}</div>}
+    </header>
+  );
+}
+
+export function Stat({
+  label,
+  value,
+  mono = true,
+  trend,
+  className = "",
+}: {
+  label: string;
+  value: React.ReactNode;
+  mono?: boolean;
+  trend?: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`rounded-lg border border-line bg-surface-2 px-4 py-3 shadow-[var(--shadow-1)] ${className}`}>
+      <div className="eyebrow text-faint">{label}</div>
+      <div
+        className={`mt-2 text-2xl font-semibold tracking-[-0.02em] text-foreground ${mono ? "font-mono tabular" : ""}`}
+      >
+        {value}
+      </div>
+      {trend && <div className="mt-2 text-xs text-muted">{trend}</div>}
     </div>
   );
 }
@@ -117,28 +185,48 @@ export function Badge({
 }) {
   const styles = {
     success: "bg-success/10 text-success border-success/30",
-    muted: "bg-raised text-muted border-line",
+    muted: "bg-surface-2 text-muted border-line",
     danger: "bg-danger/10 text-danger border-danger/30",
-    primary: "bg-primary/10 text-primary-bright border-primary/30",
+    primary: "bg-cipher/10 text-cipher border-cipher/35",
   }[tone];
   return (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${styles}`}>
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${styles}`}>
       {children}
     </span>
   );
 }
 
-export function Callout({ tone, children }: { tone: "info" | "error" | "success"; children: React.ReactNode }) {
+export function Callout({
+  tone,
+  children,
+  icon,
+}: {
+  tone: "info" | "error" | "success";
+  children: React.ReactNode;
+  icon?: React.ReactNode;
+}) {
   const styles = {
-    info: "border-line-strong bg-raised text-muted",
+    info: "border-line-strong bg-surface-2 text-muted",
     error: "border-danger/40 bg-danger/5 text-danger",
     success: "border-success/40 bg-success/5 text-success",
   }[tone];
-  return <div className={`rounded-lg border px-4 py-3 text-sm leading-relaxed ${styles}`}>{children}</div>;
+  const fallbackIcon = {
+    info: <Info className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />,
+    error: <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />,
+    success: <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />,
+  }[tone];
+  return (
+    <div
+      className={`flex gap-3 rounded-lg border px-4 py-3 text-sm leading-relaxed shadow-[var(--shadow-1)] ${styles}`}
+    >
+      {icon ?? fallbackIcon}
+      <div>{children}</div>
+    </div>
+  );
 }
 
 export function shortAddress(addr: string): string {
-  return addr.slice(0, 6) + "…" + addr.slice(-4);
+  return addr.slice(0, 6) + "..." + addr.slice(-4);
 }
 
 export function formatUnits6(value: bigint): string {
@@ -170,9 +258,10 @@ export function TxLink({ hash }: { hash: string }) {
       href={`https://sepolia.etherscan.io/tx/${hash}`}
       target="_blank"
       rel="noreferrer"
-      className="font-mono underline-offset-2 hover:text-primary-bright hover:underline"
+      className="inline-flex items-center gap-1 font-mono text-cipher underline-offset-2 hover:underline"
     >
       {shortAddress(hash)}
+      <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
     </a>
   );
 }

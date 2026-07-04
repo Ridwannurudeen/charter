@@ -12,6 +12,7 @@ import {
   Card,
   Field,
   Input,
+  PageHeader,
   TxLink,
   errorText,
   formatUnits6,
@@ -102,14 +103,17 @@ function InvestorPortal() {
   const [observerAddr, setObserverAddr] = useState("");
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Investor portal</h1>
-        <p className="mt-1 text-sm text-muted">
-          Your positions are encrypted on-chain. Decryption happens in your browser, authorized by one wallet signature
-          - nothing is revealed publicly.
-        </p>
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        eyebrow="Investor portal"
+        title="Decrypt your stake. Keep the ledger private."
+        description={
+          <>
+            Your positions are encrypted on-chain. Decryption happens in your browser, authorized by one wallet
+            signature - nothing is revealed publicly.
+          </>
+        }
+      />
 
       {error && <Callout tone="error">{error}</Callout>}
       {notice && (
@@ -125,9 +129,15 @@ function InvestorPortal() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card title="My shareholding" subtitle="Charter Demo Corp common shares (CDC-S)">
+        <Card
+          eyebrow="Encrypted position"
+          title="My shareholding"
+          subtitle="Charter Demo Corp common shares (CDC-S)"
+          variant="feature"
+          className="lg:col-span-2"
+        >
           {loading ? (
-            <div className="skeleton h-8 w-56 rounded-md" />
+            <div className="skeleton h-12 w-72 rounded-md" />
           ) : (
             <EncryptedValue
               handle={shareHandle}
@@ -137,7 +147,7 @@ function InvestorPortal() {
               emptyText="No shares issued to this wallet yet. Use the demo share faucet below."
             />
           )}
-          <div className="mt-5 flex items-center gap-3 border-t border-line pt-4">
+          <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-line pt-5">
             {votingActive ? (
               <>
                 <Badge tone="success">Voting active</Badge>
@@ -150,6 +160,7 @@ function InvestorPortal() {
                 <Badge tone="muted">Voting inactive</Badge>
                 <Button
                   variant="ghost"
+                  size="sm"
                   className="h-9"
                   onClick={() => run("Voting activation", async () => (await shares!.delegate(address)).wait())}
                 >
@@ -160,7 +171,12 @@ function InvestorPortal() {
           </div>
         </Card>
 
-        <Card title="Demo share faucet" subtitle="Claim once to become a shareholder in the self-serve Sepolia demo.">
+        <Card
+          eyebrow="Self-serve demo"
+          title="Demo share faucet"
+          subtitle="Claim once to become a shareholder in the self-serve Sepolia demo."
+          variant="raised"
+        >
           <div className="flex flex-col gap-4">
             <p className="text-sm text-muted">
               The faucet grants 1,000 encrypted CDC-S shares to the connected wallet, then blocks repeat claims.
@@ -174,7 +190,12 @@ function InvestorPortal() {
           </div>
         </Card>
 
-        <Card title="My distributions" subtitle="Confidential USD received from dividend waterfalls">
+        <Card
+          eyebrow="Confidential payouts"
+          title="My distributions"
+          subtitle="Confidential USD received from dividend waterfalls"
+          variant="raised"
+        >
           <div className="flex flex-col gap-5">
             {loading ? (
               <div className="skeleton h-8 w-56 rounded-md" />
@@ -188,13 +209,18 @@ function InvestorPortal() {
                 emptyText="No encrypted payout yet. Claim test mcUSD or wait for a distribution."
               />
             )}
-            <Button variant="ghost" onClick={() => run("mcUSD faucet", async () => (await mcUSD!.faucet()).wait())}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => run("mcUSD faucet", async () => (await mcUSD!.faucet()).wait())}
+            >
               Claim 10,000 mcUSD (test)
             </Button>
           </div>
         </Card>
 
         <Card
+          eyebrow="Encrypted transfer"
           title="Transfer shares"
           subtitle="Amounts are encrypted client-side before they touch the chain. Transfers respect the issuer's compliance policy."
         >
@@ -230,6 +256,7 @@ function InvestorPortal() {
         </Card>
 
         <Card
+          eyebrow="Observer access"
           title="Auditor access"
           subtitle="Appoint an observer - an auditor or regulator - with standing access to decrypt your positions. Revocable by setting the zero address; revocation stops future access, but values already shared remain decryptable by the former observer."
         >
@@ -244,6 +271,7 @@ function InvestorPortal() {
             </Field>
             <Button
               variant="ghost"
+              size="sm"
               disabled={!observerAddr}
               onClick={() =>
                 run("Observer update", async () => (await shares!.setObserver(address, observerAddr)).wait())

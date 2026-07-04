@@ -3,7 +3,19 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { AppShell, ConnectGate } from "@/components/AppShell";
-import { Badge, Button, Callout, Card, Field, Input, TxLink, errorText, txHashFrom } from "@/components/ui";
+import {
+  Badge,
+  Button,
+  Callout,
+  Card,
+  Field,
+  Input,
+  PageHeader,
+  Stat,
+  TxLink,
+  errorText,
+  txHashFrom,
+} from "@/components/ui";
 import { ADDRESSES, CONTRACTS_CONFIGURED } from "@/lib/contracts";
 import { encryptU64, publicDecrypt } from "@/lib/fhevm";
 import { useWallet } from "@/lib/wallet";
@@ -126,17 +138,26 @@ function Tender() {
     });
 
   const isIssuer = isAdmin || isAgent;
+  const openCount = rows.filter((row) => clock <= row.deadline).length;
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Confidential buyback</h1>
-        <p className="mt-1 text-sm text-muted">
-          The issuer offers to repurchase shares at a public price. You tender an{" "}
-          <span className="text-foreground">encrypted quantity</span> — how many shares you offer to sell stays private.
-          Only the aggregate tendered amount is disclosed at close, with an on-chain proof. If the offer is
-          oversubscribed, accepted amounts scale pro-rata on ciphertext.
-        </p>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        eyebrow="Buyback board"
+        title="Tender shares without revealing how many."
+        description={
+          <>
+            The issuer offers to repurchase shares at a public price. You tender an encrypted quantity - how many shares
+            you offer to sell stays private. Only the aggregate tendered amount is disclosed at close, with an on-chain
+            proof.
+          </>
+        }
+      />
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Stat label="Open offers" value={openCount.toLocaleString("en-US")} trend="Public offer board" />
+        <Stat label="Current block" value={clock.toLocaleString("en-US")} trend="Share-clock deadline" />
+        <Stat label="Tender privacy" value="encrypted" trend="Quantity stays private" mono={false} />
       </div>
 
       {error && <Callout tone="error">{error}</Callout>}
@@ -153,7 +174,12 @@ function Tender() {
       )}
 
       {isIssuer && (
-        <Card title="Open a buyback" subtitle="Escrows pricePerShare x maxShares of mcUSD from your treasury.">
+        <Card
+          eyebrow="Issuer action"
+          title="Open a buyback"
+          subtitle="Escrows pricePerShare x maxShares of mcUSD from your treasury."
+          variant="feature"
+        >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <div className="flex-1">
               <Field label="Price per share (mcUSD units)">
@@ -177,81 +203,89 @@ function Tender() {
         </Card>
       )}
 
-      {loading ? (
-        <Card>
-          <div className="flex flex-col gap-3">
-            <div className="skeleton h-24 rounded-md" />
-            <div className="skeleton h-24 rounded-md" />
-          </div>
-        </Card>
-      ) : rows.length === 0 ? (
-        <Card>
-          <p className="py-8 text-center text-sm text-faint">No buyback offers yet.</p>
-        </Card>
-      ) : (
-        rows.map((row) => {
-          const open = clock <= row.deadline;
-          const oversubscribed = row.totalSettled && row.totalTenderedClear > row.maxShares;
-          return (
-            <Card key={row.id}>
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-xs text-faint">#{row.id}</span>
-                    {row.totalSettled ? (
-                      <Badge tone={oversubscribed ? "primary" : "success"}>
-                        {oversubscribed ? "Settled - pro-rata" : "Settled - full fill"}
-                      </Badge>
-                    ) : open ? (
-                      <Badge tone="primary">Open</Badge>
-                    ) : (
-                      <Badge tone="muted">Awaiting settlement</Badge>
-                    )}
-                    {row.tendered && <Badge tone="muted">You tendered</Badge>}
-                  </div>
-                  <p className="mt-2 text-sm text-foreground">
-                    Repurchase up to {row.maxShares.toLocaleString("en-US")} shares at{" "}
-                    {row.pricePerShare.toLocaleString("en-US")} mcUSD each.
-                  </p>
-                  <p className="mt-1 text-xs text-muted">
-                    Closes at block {row.deadline.toLocaleString("en-US")}
-                    {open && ` - current ${clock.toLocaleString("en-US")}`}
-                  </p>
-                  {row.totalSettled && (
-                    <p className="mt-2 text-sm text-muted">
-                      Total tendered: {row.totalTenderedClear.toLocaleString("en-US")} shares. Individual tenders stay
-                      encrypted.
-                    </p>
-                  )}
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-2">
-                  {open && !row.tendered && (
-                    <div className="flex items-end gap-2">
-                      <Field label="Shares to tender">
-                        <Input
-                          className="w-32"
-                          inputMode="numeric"
-                          placeholder="1000"
-                          value={qty[row.id] ?? ""}
-                          onChange={(e) => setQty((q) => ({ ...q, [row.id]: e.target.value }))}
-                        />
-                      </Field>
-                      <Button className="h-10" onClick={() => submitTender(row.id)}>
-                        Tender
-                      </Button>
+      <div>
+        <div className="mb-4">
+          <p className="eyebrow text-cipher">Offer board</p>
+          <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em]">Public price, private size.</h2>
+        </div>
+
+        {loading ? (
+          <Card variant="raised">
+            <div className="flex flex-col gap-3">
+              <div className="skeleton h-24 rounded-md" />
+              <div className="skeleton h-24 rounded-md" />
+            </div>
+          </Card>
+        ) : rows.length === 0 ? (
+          <Card variant="raised">
+            <p className="py-8 text-center text-sm text-faint">No buyback offers yet.</p>
+          </Card>
+        ) : (
+          <div className="grid gap-5 lg:grid-cols-2">
+            {rows.map((row) => {
+              const open = clock <= row.deadline;
+              const oversubscribed = row.totalSettled && row.totalTenderedClear > row.maxShares;
+              return (
+                <Card key={row.id} variant="raised">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs text-faint">#{row.id}</span>
+                      {row.totalSettled ? (
+                        <Badge tone={oversubscribed ? "primary" : "success"}>
+                          {oversubscribed ? "Settled - pro-rata" : "Settled - full fill"}
+                        </Badge>
+                      ) : open ? (
+                        <Badge tone="primary">Open</Badge>
+                      ) : (
+                        <Badge tone="muted">Awaiting settlement</Badge>
+                      )}
+                      {row.tendered && <Badge tone="muted">You tendered</Badge>}
                     </div>
-                  )}
-                  {!open && !row.totalSettled && (
-                    <Button variant="ghost" className="h-10" onClick={() => settle(row)}>
-                      Settle with proof
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </Card>
-          );
-        })
-      )}
+                    <div className="grid w-full grid-cols-2 gap-3">
+                      <Stat label="Price" value={`${row.pricePerShare.toLocaleString("en-US")} mcUSD`} />
+                      <Stat label="Cap" value={row.maxShares.toLocaleString("en-US")} trend="shares" />
+                    </div>
+                    <p className="text-xs text-muted">
+                      Closes at block {row.deadline.toLocaleString("en-US")}
+                      {open && ` - current ${clock.toLocaleString("en-US")}`}
+                    </p>
+                    {row.totalSettled && (
+                      <p className="rounded-md border border-line bg-background/45 px-3 py-2 text-sm text-muted">
+                        Total tendered: {row.totalTenderedClear.toLocaleString("en-US")} shares. Individual tenders stay
+                        encrypted.
+                      </p>
+                    )}
+                    <div className="w-full">
+                      {open && !row.tendered && (
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                          <div className="flex-1">
+                            <Field label="Shares to tender">
+                              <Input
+                                inputMode="numeric"
+                                placeholder="1000"
+                                value={qty[row.id] ?? ""}
+                                onChange={(e) => setQty((q) => ({ ...q, [row.id]: e.target.value }))}
+                              />
+                            </Field>
+                          </div>
+                          <Button className="h-10" onClick={() => submitTender(row.id)}>
+                            Tender
+                          </Button>
+                        </div>
+                      )}
+                      {!open && !row.totalSettled && (
+                        <Button variant="ghost" size="sm" className="h-10" onClick={() => settle(row)}>
+                          Settle with proof
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
