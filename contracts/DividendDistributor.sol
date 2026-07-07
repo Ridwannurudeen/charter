@@ -32,15 +32,18 @@ contract DividendDistributor is ZamaEthereumConfig, ReentrancyGuard {
 
     event DistributionDeclared(uint256 indexed id, address indexed token, uint64 pool, uint64 totalShares);
     event BatchPaid(uint256 indexed id, address[] investors);
+    event Claimed(uint256 indexed id, address indexed investor);
     event Swept(address indexed token, address indexed to);
 
     error DistributorNotIssuer(address caller);
     error DistributorNoRecordSupply();
     error DistributorPoolOverflow();
-    error DistributorBatchTooLarge(uint256 count);
     error DistributorSharesNotPaused();
     error DistributorStaleSupply();
+    error DistributorInvalidToken(address token);
+    error DistributorInvalidDistribution(uint256 id);
     error DistributorAlreadyPaid(uint256 id, address investor);
+    error DistributorBatchTooLarge(uint256 count);
 
     modifier onlyIssuer() {
         require(SHARES.isAdmin(msg.sender) || SHARES.isAgent(msg.sender), DistributorNotIssuer(msg.sender));
@@ -71,6 +74,7 @@ contract DividendDistributor is ZamaEthereumConfig, ReentrancyGuard {
     /// caller's treasury. The caller must have set this contract as an operator on
     /// `payToken` beforehand.
     function declare(IERC7984 payToken, uint64 poolAmount) external onlyIssuer returns (uint256 id) {
+        require(address(payToken) != address(0), DistributorInvalidToken(address(payToken)));
         require(SHARES.paused(), DistributorSharesNotPaused());
         uint64 totalShares = SHARES.totalSharesOnRecord();
         require(totalShares > 0, DistributorNoRecordSupply());
@@ -92,6 +96,8 @@ contract DividendDistributor is ZamaEthereumConfig, ReentrancyGuard {
     /// @notice Pays a batch of investors their pro-rata cut of distribution `id`.
     /// Keep batches small (~15 investors) to stay within the per-transaction HCU budget.
     function payBatch(uint256 id, address[] calldata investors) external onlyIssuer nonReentrant {
+        require(id < _distributions.length, DistributorInvalidDistribution(id));
+        require(!SHARES.supplyDisclosureStale(), DistributorStaleSupply());
         Distribution storage d = _distributions[id];
         require(SHARES.paused(), DistributorSharesNotPaused());
         require(investors.length <= MAX_PAY_BATCH, DistributorBatchTooLarge(investors.length));
@@ -110,6 +116,26 @@ contract DividendDistributor is ZamaEthereumConfig, ReentrancyGuard {
             token.confidentialTransfer(investor, payout);
         }
         emit BatchPaid(id, investors);
+    }
+
+    /// @notice Pulls an investor's pro-rata cut of distribution `id`.
+    /// The investor may claim once per distribution while shares are paused for record-date integrity.
+    function claim(uint256 id) external nonReentrant {
+        require(id < _distributions.length, DistributorInvalidDistribution(id));
+        require(!SHARES.supplyDisclosureStale(), DistributorStaleSupply());
+        Distribution storage d = _distributions[id];
+        require(SHARES.paused(), DistributorSharesNotPaused());
+        require(!paid[id][msg.sender], DistributorAlreadyPaid(id, msg.sender));
+        paid[id][msg.sender] = true;
+
+        IERC7984 token = IERC7984(d.token);
+        euint64 balance = SHARES.allowBalanceAccess(msg.sender);
+        if (FHE.isInitialized(balance)) {
+            euint64 payout = FHE.div(FHE.mul(balance, d.pool), d.totalShares);
+            FHE.allowTransient(payout, d.token);
+            token.confidentialTransfer(msg.sender, payout);
+        }
+        emit Claimed(id, msg.sender);
     }
 
     /// @notice Returns this contract's remaining balance of `token` (rounding dust,

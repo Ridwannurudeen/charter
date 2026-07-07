@@ -34,10 +34,12 @@ contract CharterResolutionsV3 is ZamaEthereumConfig {
 
     /// @notice Minimum blocks between accepted proposals by the same proposer.
     uint48 public proposalCooldown;
+    uint48 public maxVotingPeriod;
 
     Resolution[] private _resolutions;
     mapping(address => bool) public hasActiveProposal;
     mapping(address => uint48) public lastProposalClock;
+    mapping(address => uint256) public activeProposalId;
     mapping(uint256 resolutionId => mapping(address voter => bool)) public hasVoted;
 
     event ResolutionProposed(uint256 indexed id, address indexed proposer, string description, uint48 deadline);
@@ -58,11 +60,13 @@ contract CharterResolutionsV3 is ZamaEthereumConfig {
     error ResolutionsActiveProposal(address proposer);
     error ResolutionsProposalCooldown(address proposer, uint48 availableAt);
     error ResolutionsVotingPeriodTooShort(uint48 votingPeriod);
+    error ResolutionsVotingPeriodTooLong(uint48 votingPeriod, uint48 maxVotingPeriod);
 
     constructor(CharterShares shares, uint32 minVoters) {
         SHARES = shares;
         MIN_VOTERS = minVoters;
         proposalCooldown = 64;
+        maxVotingPeriod = 10_000;
     }
 
     /// @notice Sets the per-proposer minimum cooldown in clocks between accepted proposals.
@@ -70,6 +74,12 @@ contract CharterResolutionsV3 is ZamaEthereumConfig {
     function setProposalCooldown(uint48 cooldown) external {
         require(SHARES.isAdmin(msg.sender), ResolutionsNotAdmin(msg.sender));
         proposalCooldown = cooldown;
+    }
+
+    function setMaxVotingPeriod(uint48 maxPeriod) external {
+        require(SHARES.isAdmin(msg.sender), ResolutionsNotAdmin(msg.sender));
+        require(maxPeriod > 0, ResolutionsVotingPeriodTooShort(maxPeriod));
+        maxVotingPeriod = maxPeriod;
     }
 
     /// @notice True if `account` may open a resolution: the issuer, any agent, or an active
@@ -82,7 +92,7 @@ contract CharterResolutionsV3 is ZamaEthereumConfig {
         if (snapshot == 0) {
             return false;
         }
-        return SHARES.delegates(account) != address(0) && FHE.isInitialized(SHARES.getPastVotes(account, snapshot - 1));
+        return SHARES.delegates(account) == account && FHE.isInitialized(SHARES.getPastVotes(account, snapshot - 1));
     }
 
     function resolutionCount() external view returns (uint256) {
@@ -98,13 +108,23 @@ contract CharterResolutionsV3 is ZamaEthereumConfig {
     function propose(string calldata description, uint48 votingPeriod) external returns (uint256 id) {
         require(canPropose(msg.sender), ResolutionsCannotPropose(msg.sender));
         require(votingPeriod > 0, ResolutionsVotingPeriodTooShort(votingPeriod));
+        require(votingPeriod <= maxVotingPeriod, ResolutionsVotingPeriodTooLong(votingPeriod, maxVotingPeriod));
+        uint48 snapshot = SHARES.clock();
+        if (hasActiveProposal[msg.sender] && _resolutions.length > 0) {
+            uint256 activeId = activeProposalId[msg.sender];
+            if (activeId < _resolutions.length) {
+                Resolution storage active = _resolutions[activeId];
+                if (active.proposer == msg.sender && snapshot > active.deadline) {
+                    hasActiveProposal[msg.sender] = false;
+                    activeProposalId[msg.sender] = 0;
+                }
+            }
+        }
         require(!hasActiveProposal[msg.sender], ResolutionsActiveProposal(msg.sender));
         if (proposalCooldown != 0 && lastProposalClock[msg.sender] != 0) {
             uint48 nextAllowedAt = lastProposalClock[msg.sender] + proposalCooldown;
             require(SHARES.clock() >= nextAllowedAt, ResolutionsProposalCooldown(msg.sender, nextAllowedAt));
         }
-
-        uint48 snapshot = SHARES.clock();
 
         id = _resolutions.length;
         _resolutions.push();
@@ -121,6 +141,7 @@ contract CharterResolutionsV3 is ZamaEthereumConfig {
 
         lastProposalClock[msg.sender] = snapshot;
         hasActiveProposal[msg.sender] = true;
+        activeProposalId[msg.sender] = id;
 
         emit ResolutionProposed(id, msg.sender, description, r.deadline);
     }
@@ -160,6 +181,7 @@ contract CharterResolutionsV3 is ZamaEthereumConfig {
         require(!r.resolved, ResolutionsAlreadyResolved(id));
         if (r.proposer != address(0) && hasActiveProposal[r.proposer]) {
             hasActiveProposal[r.proposer] = false;
+            activeProposalId[r.proposer] = 0;
         }
         r.tallyRequested = true;
 
@@ -193,6 +215,7 @@ contract CharterResolutionsV3 is ZamaEthereumConfig {
         r.resolved = true;
         if (r.proposer != address(0) && hasActiveProposal[r.proposer]) {
             hasActiveProposal[r.proposer] = false;
+            activeProposalId[r.proposer] = 0;
         }
         emit ResolutionSettled(id, passedClear, true);
     }

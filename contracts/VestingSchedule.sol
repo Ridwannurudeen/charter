@@ -69,6 +69,8 @@ contract VestingSchedule is ZamaEthereumConfig {
     ) external onlyIssuer returns (uint256 id) {
         require(beneficiary != address(0), VestingInvalidBeneficiary(beneficiary));
         require(vestingDuration > 0 && cliffDelay <= vestingDuration, VestingBadSchedule());
+        uint48 nowClock = uint48(SHARES.clock());
+        require(nowClock <= type(uint48).max - vestingDuration, VestingBadSchedule());
 
         euint64 total = FHE.fromExternal(encryptedTotal, inputProof);
         FHE.allowTransient(total, address(SHARES));
@@ -79,7 +81,6 @@ contract VestingSchedule is ZamaEthereumConfig {
         FHE.allowThis(total);
         FHE.allow(total, beneficiary);
 
-        uint48 nowClock = uint48(SHARES.clock());
         id = _grants.length;
         _grants.push(
             Grant({

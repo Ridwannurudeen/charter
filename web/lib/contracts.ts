@@ -65,6 +65,7 @@ export const DISTRIBUTOR_ABI = [
   "function getDistribution(uint256 id) view returns (tuple(address token, uint64 pool, uint64 totalShares, uint48 declaredAt))",
   "function paid(uint256 id, address investor) view returns (bool)",
   "function declare(address payToken, uint64 poolAmount) returns (uint256)",
+  "function claim(uint256 id)",
   "function payBatch(uint256 id, address[] investors)",
   "function sweep(address token, address to)",
 ] as const;

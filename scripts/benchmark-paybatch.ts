@@ -1,13 +1,14 @@
 import hre, { deployments, ethers, fhevm } from "hardhat";
 
 /**
- * Replaces the README's "not yet benchmarked" hedge on payBatch batch size with real, measured gas
- * numbers: pays batches of 5 and 12 investors (12 is the confirmed real per-transaction ceiling —
- * batches of 13+ revert; see docs/E2E-RUN.md for the probe that found this) and reports the actual
- * gas used for each, plus the implied marginal per-investor cost.
+ * Legacy `payBatch` operator path benchmark only.
+ *
+ * Measures the historical admin-push payout flow (not the current user-facing flow). Probes
+ * batches of 5 and 12 investors (12 is the confirmed real per-transaction ceiling,
+ * 13+ revert) as documented in docs/E2E-RUN.md, and reports actual gas + implied
+ * marginal cost for this push path.
  *   npx hardhat run scripts/benchmark-paybatch.ts --network sepolia
  */
-
 const SEPOLIA_FHEVM_ENV = {
   FHEVM_HARDHAT_NETWORK: "sepolia",
   ACL_CONTRACT_ADDRESS: "0xf0Ffdc93b7E186bC2f8CB3dAA75D86d1930A433D",
@@ -17,6 +18,14 @@ const SEPOLIA_FHEVM_ENV = {
   HCU_LIMIT_CONTRACT_ADDRESS: "0x594BB474275918AF9609814E68C61B1587c5F838",
   RELAYER_URL: "https://relayer.testnet.zama.org/v2",
 } as const;
+
+async function getStartNonce(signer: { getNonce: () => Promise<number> }) {
+  try {
+    return await signer.getNonce("pending");
+  } catch {
+    return signer.getNonce();
+  }
+}
 
 async function initializeFhevmCli() {
   if (hre.network.name === "sepolia") {
@@ -52,13 +61,23 @@ async function main() {
   const mcUSD = await ethers.getContractAt("MockConfidentialUSD", mcUSDDep.address, deployer);
   const distributor = await ethers.getContractAt("DividendDistributor", distributorDep.address, deployer);
 
+  if (await shares.paused()) {
+    console.log("unpausing CharterShares before benchmark minting");
+    await (await shares.unpause()).wait();
+  }
+
+  let nextNonce = await getStartNonce(deployer);
+
+  console.log(`preparing benchmark encrypted amount`);
+  const amountInput = await fhevm.createEncryptedInput(sharesDep.address, deployer.address).add64(100).encrypt();
+
   console.log(`minting 100 shares to each of ${holders.length} fresh wallets...`);
   for (const holder of holders) {
-    const input = await fhevm.createEncryptedInput(sharesDep.address, deployer.address).add64(100).encrypt();
     const tx = await shares["confidentialMint(address,bytes32,bytes)"](
       holder.address,
-      input.handles[0],
-      input.inputProof,
+      amountInput.handles[0],
+      amountInput.inputProof,
+      { nonce: nextNonce++ },
     );
     await tx.wait();
   }
@@ -87,7 +106,8 @@ async function main() {
   const receipt5 = await tx5.wait();
   console.log(`payBatch(5 investors): gas used = ${receipt5!.gasUsed} | tx ${tx5.hash}`);
 
-  // The next 12 holders, paid in one call: the confirmed real per-transaction ceiling.
+  // Legacy push path: the next 12 holders, paid in one call, measure the confirmed
+  // per-transaction ceiling.
   const tx12 = await distributor.payBatch(
     distId,
     holders.slice(5, 17).map((h) => h.address),
@@ -95,7 +115,7 @@ async function main() {
   const receipt12 = await tx12.wait();
   console.log(`payBatch(12 investors): gas used = ${receipt12!.gasUsed} | tx ${tx12.hash}`);
 
-  // Pay the remaining 3 holders to leave every wallet paid.
+  // Legacy push path: pay the remaining 3 holders to leave every wallet paid.
   const tx3 = await distributor.payBatch(
     distId,
     holders.slice(17, 20).map((h) => h.address),

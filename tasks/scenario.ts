@@ -205,6 +205,41 @@ task<{ id: string; investors: string }>("scenario:pay", "Pay a distribution batc
     }),
   );
 
+task<{ id: string }>("scenario:claim", "Claim a distribution payout for the connected investor")
+  .addParam("id", "Distribution id")
+  .setAction((args, hre) =>
+    run("scenario:claim", async () => {
+      const c = await contracts(hre);
+      if (!(await c.shares.paused())) {
+        throw new Error("Claims require shares to stay paused for the record-date window.");
+      }
+      await send("distributor.claim", c.distributor.claim(BigInt(args.id)));
+      console.log(`wallet ${c.signer.address} claimed distribution ${args.id}`);
+    }),
+  );
+
+task("scenario:pause", "Pause CharterShares for a dividend record-date window").setAction((_args, hre) =>
+  run("scenario:pause", async () => {
+    const c = await contracts(hre);
+    if (await c.shares.paused()) {
+      console.log("shares already paused");
+      return;
+    }
+    await send("shares.pause", c.shares.pause());
+  }),
+);
+
+task("scenario:unpause", "Unpause CharterShares after a record-date window").setAction((_args, hre) =>
+  run("scenario:unpause", async () => {
+    const c = await contracts(hre);
+    if (!(await c.shares.paused())) {
+      console.log("shares already unpaused");
+      return;
+    }
+    await send("shares.unpause", c.shares.unpause());
+  }),
+);
+
 task<{ text: string; blocks: string }>("scenario:propose", "Create a shareholder resolution")
   .addParam("text", "Resolution text")
   .addParam("blocks", "Voting period in blocks")
@@ -292,21 +327,28 @@ task<{ signer: string }>("scenario:claim-shares", "Claim demo shares from the on
 task("scenario:status", "Print Charter scenario state").setAction((_args, hre) =>
   run("scenario:status", async () => {
     const c = await contracts(hre);
-    const [totalShares, paused, distributionCount, resolutionCount] = await Promise.all([
+    const [totalShares, paused, supplyDisclosureStale, distributionCount, resolutionCount] = await Promise.all([
       c.shares.totalSharesOnRecord(),
       c.shares.paused(),
+      c.shares.supplyDisclosureStale(),
       c.distributor.distributionCount(),
       c.resolutions.resolutionCount(),
     ]);
     console.log(`totalSharesOnRecord: ${totalShares}`);
     console.log(`paused: ${paused}`);
+    console.log(`supplyDisclosureStale: ${supplyDisclosureStale}`);
     console.log(`distributionCount: ${distributionCount}`);
     console.log(`resolutionCount: ${resolutionCount}`);
     for (let i = 0n; i < resolutionCount; i++) {
-      const r = await c.resolutions.getResolution(i);
-      console.log(
-        `resolution #${i}: voters=${r.voterCount} quorum=${r.quorumReached} resolved=${r.resolved} passed=${r.passed} tallyRequested=${r.tallyRequested} deadline=${r.deadline} text="${r.description}"`,
-      );
+      try {
+        const r = await c.resolutions.getResolution(i);
+        console.log(
+          `resolution #${i}: voters=${r.voterCount} quorum=${r.quorumReached} resolved=${r.resolved} passed=${r.passed} tallyRequested=${r.tallyRequested} deadline=${r.deadline} text="${r.description}"`,
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message.split("\n")[0] : String(error);
+        console.log(`resolution #${i}: skipped (${message})`);
+      }
     }
   }),
 );

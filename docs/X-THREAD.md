@@ -10,7 +10,7 @@ ERC-7984 handle and input proof, not a clear amount.
 KMS proof on-chain with `FHE.checkSignatures`.
 
 4/ Dividends run over ciphertext. The issuer pauses transfers as the record date, declares a public mcUSD pool, and
-`payBatch` computes `encrypted balance * pool / total shares` for each investor.
+investors claim their own pro-rata share with `claim(distributionId)`.
 
 5/ The reveal stays personal. An investor decrypts their own shares and payouts in the browser through an EIP-712
 user-decryption session. Membership is public; balances and payouts are not.

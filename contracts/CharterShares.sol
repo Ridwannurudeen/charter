@@ -73,24 +73,53 @@ contract CharterShares is ZamaEthereumConfig, ERC7984Rwa, ERC7984ObserverAccess,
 
     /// @notice Recovers leftover funds from a disabled module after a module swap.
     function recoverModuleFunds(address module, IERC7984 token, address to) external onlyAdmin {
-        require(!isModule[module], CharterModuleStillActive(module));
-        require(to != address(0), CharterModuleZeroAddress());
-        require(address(token) != address(0), CharterModuleZeroAddress());
-        IModuleFundsRecoverable(module).sweep(token, to);
-        emit ModuleFundsRecovered(module, address(token), to);
+        IERC7984[] memory tokens = new IERC7984[](1);
+        tokens[0] = token;
+        _recoverModuleFunds(module, tokens, to);
+    }
+
+    /// @notice Recovers multiple known escrowed token balances from a disabled module.
+    function recoverModuleFundsBatch(address module, IERC7984[] calldata tokens, address to) external onlyAdmin {
+        _recoverModuleFunds(module, tokens, to);
     }
 
     /// @notice Disables a module and immediately recovers one known escrowed token balance.
     function disableModuleAndRecover(address module, IERC7984 token, address to) external onlyAdmin {
+        IERC7984[] memory tokens = new IERC7984[](1);
+        tokens[0] = token;
+
+        _disableModuleAndRecover(module, tokens, to);
+    }
+
+    /// @notice Disables a module and immediately recovers multiple known escrowed token balances.
+    function disableModuleAndRecoverBatch(address module, IERC7984[] calldata tokens, address to) external onlyAdmin {
+        _disableModuleAndRecover(module, tokens, to);
+    }
+
+    function _disableModuleAndRecover(
+        address module,
+        IERC7984[] memory tokens,
+        address to
+    ) private {
         require(isModule[module], CharterModuleNotActive(module));
         require(module != address(0), CharterModuleZeroAddress());
-        require(address(token) != address(0), CharterModuleZeroAddress());
         isModule[module] = false;
         emit ModuleSet(module, false);
 
+        _recoverModuleFunds(module, tokens, to);
+    }
+
+    function _recoverModuleFunds(address module, IERC7984[] memory tokens, address to) private {
+        require(module != address(0), CharterModuleZeroAddress());
+        require(!isModule[module], CharterModuleStillActive(module));
         require(to != address(0), CharterModuleZeroAddress());
-        IModuleFundsRecoverable(module).sweep(token, to);
-        emit ModuleFundsRecovered(module, address(token), to);
+
+        for (uint256 i = 0; i < tokens.length; i++) {
+            IERC7984 token = tokens[i];
+            require(address(token) != address(0), CharterModuleZeroAddress());
+            IModuleFundsRecoverable(module).sweep(token, to);
+            emit ModuleFundsRecovered(module, address(token), to);
+        }
     }
 
     /// @notice Grants the calling module transient (same-transaction) ACL access to

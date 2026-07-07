@@ -1,4 +1,4 @@
-# Charter Sepolia E2E Run
+﻿# Charter Sepolia E2E Run
 
 Date: 2026-07-03 Network: Sepolia, chain id 11155111 Deployer: `0x04045Ca68BEF611adBD76e58C028cEFf4a3d640D` Voter 1:
 `0x510456aB08994AaC33fc8487b00774F531cD1e6C` Voter 2: `0x697B2D132a86d3f07ACe4a296f8d5c3bd150B7Dc`
@@ -60,7 +60,8 @@ Initial `scenario:status`: `totalSharesOnRecord=0`, `paused=false`, `distributio
 | Approve distributor as operator | Operator until 1783170827                                                      | [0xbd5dbd6f266820b43f72dba0f4bdf3056f5ba126e3dc6876941dd6a42742aaa6](https://sepolia.etherscan.io/tx/0xbd5dbd6f266820b43f72dba0f4bdf3056f5ba126e3dc6876941dd6a42742aaa6) |
 | Pause shares                    | Pause is the dividend record date                                              | [0xd57739d29b6a45ba90217529087b6c815133d335480b9de54480de36f1a0c4ac](https://sepolia.etherscan.io/tx/0xd57739d29b6a45ba90217529087b6c815133d335480b9de54480de36f1a0c4ac) |
 | Declare distribution            | Distribution id `0`, pool 1000 mcUSD                                           | [0x2da70170e86f441d76f9f8b7cc5b5f9fb1817e8f1fea6082e2899c1eadac124c](https://sepolia.etherscan.io/tx/0x2da70170e86f441d76f9f8b7cc5b5f9fb1817e8f1fea6082e2899c1eadac124c) |
-| Pay batch                       | Three holders paid                                                             | [0x20e0bf66a26a85aab0769b0b4761de33111c3e79d7d2571cc6f1700474336859](https://sepolia.etherscan.io/tx/0x20e0bf66a26a85aab0769b0b4761de33111c3e79d7d2571cc6f1700474336859) |
+| Investor claim                  | Holders claim distribution id `0` via `claim(0)`                               | Wallet-specific claim tx appears on-chain for each wallet                                                                                                                |
+| Pay batch (legacy benchmark)    | Three holders paid through legacy operator flow (historical only)              | [0x20e0bf66a26a85aab0769b0b4761de33111c3e79d7d2571cc6f1700474336859](https://sepolia.etherscan.io/tx/0x20e0bf66a26a85aab0769b0b4761de33111c3e79d7d2571cc6f1700474336859) |
 | Unpause shares                  | Transfers live again                                                           | [0xa61843401e3037e110154c8ff78dc6610e0e622276439049c3f4b8c330094546](https://sepolia.etherscan.io/tx/0xa61843401e3037e110154c8ff78dc6610e0e622276439049c3f4b8c330094546) |
 | Propose resolution 0            | Resolution id `0`, 40-block window                                             | [0xbcb10973c076ab0f560249917e46a0a037b82e705f390a336ff802bb59c2786b](https://sepolia.etherscan.io/tx/0xbcb10973c076ab0f560249917e46a0a037b82e705f390a336ff802bb59c2786b) |
 | Vote resolution 0, deployer     | FOR                                                                            | [0xecde4fc9f03fccbfaab0f3d549719ff117ad47881df0cfd7bc283c114f9bda18](https://sepolia.etherscan.io/tx/0xecde4fc9f03fccbfaab0f3d549719ff117ad47881df0cfd7bc283c114f9bda18) |
@@ -90,17 +91,17 @@ A second judge-triggerable resolution was staged so more than one visitor can pe
 | Vote resolution 2, voter 2  | FOR                                                          | [0xd96e714c17999a79db3ca13be0c80eb0a9ca8e81b157461c02f4c22005557224](https://sepolia.etherscan.io/tx/0xd96e714c17999a79db3ca13be0c80eb0a9ca8e81b157461c02f4c22005557224) |
 | Request resolution 2 tally  | Tally requested and left unresolved                          | [0x3d9dca982187a1fd36b6b35807b5c2fc37158eb3d211bcf5dd7287787817ed95](https://sepolia.etherscan.io/tx/0x3d9dca982187a1fd36b6b35807b5c2fc37158eb3d211bcf5dd7287787817ed95) |
 
-Resolutions 1 and 2 are both `tallyRequested=true`, `resolved=false` — either can be settled permissionlessly from the
+Resolutions 1 and 2 are both `tallyRequested=true`, `resolved=false` â€” either can be settled permissionlessly from the
 governance page. Sourcify verification for all five contracts was completed in this pass (see Verification above).
 
 ## Fixing six structural limitations (2026-07-04)
 
 A brutally-honest self-review found six real gaps between what Charter claims and what it builds: no vesting/lifecycle
 modeling, no path to a compliant issuance gate, unilateral single-key force-transfer dressed as "compliance," an
-amount-vs-identity privacy mismatch, an unbenchmarked batch-size claim, and over-claiming "cap table" against a
+amount-vs-identity privacy mismatch, a benchmarked legacy batch-size limit, and over-claiming "cap table" against a
 production competitor. Three new modules were built, tested (11 new tests, 41 total), deployed, verified on both
 explorers, and exercised live on Sepolia with real transactions below. The privacy-model and positioning gaps were fixed
-by precise re-scoping in this document and the README, not new code — see "Design Decisions and Constraints."
+by precise re-scoping in this document and the README, not new code â€” see "Design Decisions and Constraints."
 
 ### Confidential vesting (`VestingSchedule`)
 
@@ -121,15 +122,15 @@ accredited.
 | Wallet accredited | Registry admin marks a wallet eligible                      | [0xf2f267215fc7c7f87cec1a6d61298b257570e19be6a89dc77f6111e9556d48b7](https://sepolia.etherscan.io/tx/0xf2f267215fc7c7f87cec1a6d61298b257570e19be6a89dc77f6111e9556d48b7) |
 | Gated mint        | 25,000 encrypted shares minted to the now-accredited wallet | [0x65f76e257f727fa64525493c4466b136ac1cfd9777e0288d476154913fea3d4e](https://sepolia.etherscan.io/tx/0x65f76e257f727fa64525493c4466b136ac1cfd9777e0288d476154913fea3d4e) |
 
-A mint attempt to a non-accredited wallet reverts with `IssuanceNotAccredited` before the gate is granted — verified in
-the test suite.
+A mint attempt to a non-accredited wallet reverts with `IssuanceNotAccredited` before the gate is granted â€” verified
+in the test suite.
 
 ### Force-transfer guardian (`ForceTransferGuardian`)
 
 Replaces a single agent's silent, unilateral `forceConfidentialTransferFrom` with a 2-of-3 guardian quorum, a public
 reason, and a 30-block timelock before anyone can execute. The demo's three guardian keys are derived from the same
-mnemonic for convenience — a real deployment would assign each guardian to an independently-held key so no single party
-controls quorum. Guardians were funded with a small amount of Sepolia ETH to submit these transactions.
+mnemonic for convenience â€” a real deployment would assign each guardian to an independently-held key so no single
+party controls quorum. Guardians were funded with a small amount of Sepolia ETH to submit these transactions.
 
 | Step                       | Detail                                                                                              | Tx                                                                                                                                                                       |
 | -------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -139,19 +140,70 @@ controls quorum. Guardians were funded with a small amount of Sepolia ETH to sub
 | Confirmed (quorum reached) | 2-of-3 guardians confirmed; timelock started                                                        | [0x44b3d038686b39217711ec1e1388afb86edac0735507929dd2689a7e2df25e9e](https://sepolia.etherscan.io/tx/0x44b3d038686b39217711ec1e1388afb86edac0735507929dd2689a7e2df25e9e) |
 | Executed after timelock    | Shares moved only after quorum + delay                                                              | [0x2b668cbce2948e8307934c127d2b3e73c2d2bfb739543b4c2cb0bbe061e6c208](https://sepolia.etherscan.io/tx/0x2b668cbce2948e8307934c127d2b3e73c2d2bfb739543b4c2cb0bbe061e6c208) |
 
-### `payBatch` real batch-size benchmark
+## Claim-enabled distributor swaps (2026-07-07)
 
-The README previously hedged "designed for roughly 15 investors per transaction; not yet benchmarked." Probing with
-`staticCall` found the real per-transaction ceiling for this distribution: **12 investors succeeds, 13 reverts** (a
-coprocessor-level custom error, selector `0x77e3c293` — not one of Charter's own declared errors; root cause not further
-identified, stated honestly rather than guessed). Measured gas, cross-checked against the round-two 3-investor batch
-(1,191,296 gas, ~397k/investor):
+The original Sepolia distributor at `0x42C8c19fbC1E2F5649d540237759E7bFee5617b9` was the legacy operator-push path. It
+was first replaced by `0x087966338018456ED2079D3D3d67F7A1B16e40c6` to add investor-pulled `claim(uint256)` payouts. A
+small follow-up then replaced that distributor with `0xd8562d7609c0E05DdD9ba4653cE90646bf2eB3b4`, keeping `claim()` and
+restoring the explicit `payBatch` guard (`MAX_PAY_BATCH = 12`, `DistributorBatchTooLarge`). Both swaps used the same
+`CharterShares` contract; the share token was not redeployed and no holdings were migrated.
 
-| Batch size                       | Gas used  | Tx                                                                                                                                                                       |
-| -------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 5 investors                      | 1,961,644 | [0x8bf67681fd79074ad43c0aa084f4fb25e619c74109617a56df378b9ccceff493](https://sepolia.etherscan.io/tx/0x8bf67681fd79074ad43c0aa084f4fb25e619c74109617a56df378b9ccceff493) |
-| 12 investors (confirmed ceiling) | 4,570,000 | [0x06a3c2a3ad630b535cc0afd4dcf283067405681d6700c3a5ffa966f94dd2b6f7](https://sepolia.etherscan.io/tx/0x06a3c2a3ad630b535cc0afd4dcf283067405681d6700c3a5ffa966f94dd2b6f7) |
-| 3 investors (remainder)          | 1,216,397 | [0xcdc540964d59a8ace17fcc378a1dd763b2e48a35d8d5fd83bfb05b3bc0f3df21](https://sepolia.etherscan.io/tx/0xcdc540964d59a8ace17fcc378a1dd763b2e48a35d8d5fd83bfb05b3bc0f3df21) |
+### Generation 2: claim-enabled distributor
+
+| Step                                | Detail                                              | Tx                                                                                                                                                                       |
+| ----------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Deploy claim-enabled distributor    | `DividendDistributor` with `claim(uint256)`         | [0x6c044ba18e05cd82613c50d0e512ba96be57d4c558b7ebcb2426dbf7a8937a05](https://sepolia.etherscan.io/tx/0x6c044ba18e05cd82613c50d0e512ba96be57d4c558b7ebcb2426dbf7a8937a05) |
+| Register new distributor module     | `CharterShares.setModule(new, true)`                | [0xef12ce6df8d1cc605ceacd04e98830b0e22bd13cb071565768d7a329adbd2d10](https://sepolia.etherscan.io/tx/0xef12ce6df8d1cc605ceacd04e98830b0e22bd13cb071565768d7a329adbd2d10) |
+| Revoke legacy distributor module    | `CharterShares.setModule(old, false)`               | [0x03d310e32c13e8d8a8aba6b470aada4e24b94a8451c6515e1acf0531a278b090](https://sepolia.etherscan.io/tx/0x03d310e32c13e8d8a8aba6b470aada4e24b94a8451c6515e1acf0531a278b090) |
+| Mint payout token                   | 1,000 mcUSD to deployer                             | [0xde3263cce4ee4d94fea33d15daeff845d1951908befb04f47d07ef49f5d821e5](https://sepolia.etherscan.io/tx/0xde3263cce4ee4d94fea33d15daeff845d1951908befb04f47d07ef49f5d821e5) |
+| Approve new distributor as operator | Operator until `1783524192`                         | [0x90540af32fdfa2a2442f5b76d63f3339f56faa4441dc459b197afe612e895d66](https://sepolia.etherscan.io/tx/0x90540af32fdfa2a2442f5b76d63f3339f56faa4441dc459b197afe612e895d66) |
+| Pause shares                        | Dividend record-date window                         | [0xf457388d36f4b8173792645852c5ecd5e8fd8377ae82e8c0d34bff4d6bccc4d8](https://sepolia.etherscan.io/tx/0xf457388d36f4b8173792645852c5ecd5e8fd8377ae82e8c0d34bff4d6bccc4d8) |
+| Declare pull distribution           | Distribution id `0`, pool 1,000 mcUSD               | [0x879322890b47c7197522b7a06941d231cf771600f7de15c9f27defb7ce72f817](https://sepolia.etherscan.io/tx/0x879322890b47c7197522b7a06941d231cf771600f7de15c9f27defb7ce72f817) |
+| Claim distribution                  | Deployer claimed distribution id `0` via `claim(0)` | [0x13d47fe9ceaa62c23626633a3ae7eac4821ac4eeeb1ec31a7a7eefe8699e08db](https://sepolia.etherscan.io/tx/0x13d47fe9ceaa62c23626633a3ae7eac4821ac4eeeb1ec31a7a7eefe8699e08db) |
+| Unpause shares                      | Transfers live again                                | [0x11f68c5c7eb13702249f5001465dcf3a795e34683fc7e5dc4aa651c36b4f3e16](https://sepolia.etherscan.io/tx/0x11f68c5c7eb13702249f5001465dcf3a795e34683fc7e5dc4aa651c36b4f3e16) |
+
+### Generation 3: guarded claim distributor (active)
+
+| Step                                     | Detail                                                                           | Tx                                                                                                                                                                       |
+| ---------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Deploy guarded claim distributor         | Active `DividendDistributor` with `claim()` and `MAX_PAY_BATCH = 12`             | [0x9814c64d7224f81eb71b5e5e297244950fd58301683f8f470f80b317aaa3594d](https://sepolia.etherscan.io/tx/0x9814c64d7224f81eb71b5e5e297244950fd58301683f8f470f80b317aaa3594d) |
+| Register guarded distributor module      | `CharterShares.setModule(new, true)`                                             | [0x506dcaba10513327a1a2362bf0be0d2298bbc537a219f7273e3ccffc0b502bc5](https://sepolia.etherscan.io/tx/0x506dcaba10513327a1a2362bf0be0d2298bbc537a219f7273e3ccffc0b502bc5) |
+| Revoke previous claim distributor module | `CharterShares.setModule(old, false)`                                            | [0xb79a9bb036fe14bb8d6a811946c1c99e4900ef5e5ea01754b182f31a5e29714d](https://sepolia.etherscan.io/tx/0xb79a9bb036fe14bb8d6a811946c1c99e4900ef5e5ea01754b182f31a5e29714d) |
+| Mint payout token                        | 1,000 mcUSD to deployer                                                          | [0xf15b6c07330a03b100c6eb4f67d397b0b8010886ef6f0cc2debe177510baaa01](https://sepolia.etherscan.io/tx/0xf15b6c07330a03b100c6eb4f67d397b0b8010886ef6f0cc2debe177510baaa01) |
+| Approve guarded distributor as operator  | Operator until `1783529210`                                                      | [0x97907b9f18f93e1e52a098fa70576a83592f81d5af2ee929094eedbdd24e0922](https://sepolia.etherscan.io/tx/0x97907b9f18f93e1e52a098fa70576a83592f81d5af2ee929094eedbdd24e0922) |
+| Pause shares                             | Dividend record-date window                                                      | [0xf8cbfc16200cd477e224a7e1094d5914ba35e7a9e853047783964041e9fdb80c](https://sepolia.etherscan.io/tx/0xf8cbfc16200cd477e224a7e1094d5914ba35e7a9e853047783964041e9fdb80c) |
+| Declare pull distribution                | Active distributor distribution id `0`, pool 1,000 mcUSD                         | [0xca11d185424768d73d41a6c26b14c88891c2d9dd732f54f740ff800b3f7ddd19](https://sepolia.etherscan.io/tx/0xca11d185424768d73d41a6c26b14c88891c2d9dd732f54f740ff800b3f7ddd19) |
+| Probe oversized `payBatch`               | 13-address tx mined reverted; static call decoded `DistributorBatchTooLarge(13)` | [0xfd06c05b5c3a7ce72b6c750139468e5cb4efa8d16c1c4a7bbb950867740d9180](https://sepolia.etherscan.io/tx/0xfd06c05b5c3a7ce72b6c750139468e5cb4efa8d16c1c4a7bbb950867740d9180) |
+| Claim distribution                       | Deployer claimed distribution id `0` via `claim(0)`                              | [0x6d77d7c48c34edee01e46d27ea08b8b4af8afc0bdf7eae64a75d5e31c73a4ed4](https://sepolia.etherscan.io/tx/0x6d77d7c48c34edee01e46d27ea08b8b4af8afc0bdf7eae64a75d5e31c73a4ed4) |
+| Unpause shares                           | Transfers live again after the claim evidence transaction                        | [0x6fc6d6822f477f70718ab79ba919be32e301970e41890536a970ba508cb6844f](https://sepolia.etherscan.io/tx/0x6fc6d6822f477f70718ab79ba919be32e301970e41890536a970ba508cb6844f) |
+
+Post-run read checks for the active distributor: `totalSharesOnRecord=1034800`, `paused=false`,
+`supplyDisclosureStale=false`, `distributionCount=1`, and
+`DividendDistributor.paid(0, 0x04045Ca68BEF611adBD76e58C028cEFf4a3d640D)=true`.
+
+Source verification for the active distributor was retried on 2026-07-07. Etherscan returned `Connect Timeout Error`;
+Sourcify returned a scheduled API v1 brownout (`503`). The contract is deployed and exercised live, but the active
+address should not be described as source-verified until verification is rerun successfully.
+
+### Legacy `payBatch` real batch-size benchmark
+
+The legacy operator push flow remains for non-user-facing benchmarking. Pull-based `claim()` is now the user-facing
+payout model. Historical probing of the guardless push flow found the real per-transaction ceiling for this
+distribution: **12 investors succeeds, 13 reverts** (then with a coprocessor-level custom error, selector `0x77e3c293`).
+The active guarded distributor now fails earlier and legibly: a 13-address live probe decoded to
+`DistributorBatchTooLarge(13)` and the forced transaction mined reverted with status `0` before FHE batch work. Measured
+gas for the legacy successful batches, cross-checked against the round-two 3-investor batch (1,191,296 gas,
+~397k/investor): | Batch size | Gas used | Tx | | -------------------------------- | --------- |
+
+---
+
+| | 5 investors | 1,961,644 |
+[0x8bf67681fd79074ad43c0aa084f4fb25e619c74109617a56df378b9ccceff493](https://sepolia.etherscan.io/tx/0x8bf67681fd79074ad43c0aa084f4fb25e619c74109617a56df378b9ccceff493)
+| | 12 investors (confirmed ceiling) | 4,570,000 |
+[0x06a3c2a3ad630b535cc0afd4dcf283067405681d6700c3a5ffa966f94dd2b6f7](https://sepolia.etherscan.io/tx/0x06a3c2a3ad630b535cc0afd4dcf283067405681d6700c3a5ffa966f94dd2b6f7)
+| | 3 investors (remainder) | 1,216,397 |
+[0xcdc540964d59a8ace17fcc378a1dd763b2e48a35d8d5fd83bfb05b3bc0f3df21](https://sepolia.etherscan.io/tx/0xcdc540964d59a8ace17fcc378a1dd763b2e48a35d8d5fd83bfb05b3bc0f3df21)
+|
 
 Implied marginal cost: ~372,600 gas per additional investor (consistent with the independent round-two data point). At
 current Sepolia gas prices (~1 gwei) a 12-investor batch costs a small fraction of a cent; the binding constraint is the

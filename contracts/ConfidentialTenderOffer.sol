@@ -50,6 +50,7 @@ contract ConfidentialTenderOffer is ZamaEthereumConfig, ReentrancyGuard {
     error TenderNotIssuer(address caller);
     error TenderBatchTooLarge(uint256 count);
     error TenderBadParams();
+    error TenderInvalidToken(address token);
     error TenderClosed(uint256 id);
     error TenderNotClosed(uint256 id);
     error TenderAlready(uint256 id, address holder);
@@ -91,6 +92,7 @@ contract ConfidentialTenderOffer is ZamaEthereumConfig, ReentrancyGuard {
         uint64 maxShares,
         uint48 votingPeriod
     ) external onlyIssuer returns (uint256 id) {
+        require(address(paymentToken) != address(0), TenderInvalidToken(address(paymentToken)));
         // Escrow (max payout) must fit euint64; this also bounds every per-holder payment.
         require(
             pricePerShare > 0 &&

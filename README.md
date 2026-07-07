@@ -50,9 +50,9 @@ softer language. Full tx evidence is in `docs/E2E-RUN.md`.
    is a correct critique of ERC-7984 generally, not something a redesign fixes: identity-privacy needs a fundamentally
    different primitive (stealth addresses, shielded pools), out of scope here. Charter is precisely an
    **amount-privacy** primitive — the README no longer implies more than that (see "Design Decisions and Constraints").
-5. **"The ~15-investor batch-size claim was a guess, not a benchmark."** It has now been measured. `payBatch` was probed
-   with `staticCall` at increasing sizes: **12 investors succeeds, 13 reverts** — a real, lower, and now-known ceiling,
-   not a guess. See the benchmark table in `docs/E2E-RUN.md` for gas numbers and the underlying tx.
+5. **"The old batch-size benchmark implied a workflow dependency."** Legacy push payouts once had a hard measured
+   ceiling under `payBatch` stress. We now remove that user-facing dependency by making distribution collection
+   pull-based through `claim()`: any investor can claim independently using the same distribution id.
 6. **"Against TokenOps, Charter reads as pre-revenue theater claiming to be a cap-table product."** Fixed by scope, not
    spin: the framing above no longer says "cap table." Charter is the confidential equity-registry primitive a real
    cap-table product would be built on top of, with a demonstrated (not claimed) composable-module pattern — see
@@ -101,7 +101,7 @@ The frontend loads the relayer SDK only through `web/lib/fhevm.ts`. User decrypt
 | ----------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------- | ------------------------------------------------------------------------ |
 | Issuance          | `CharterShares.confidentialMint(address,bytes32,bytes)`                                                | Each minted allocation              | Holder address and encrypted handle                                      |
 | Supply disclosure | `requestSupplyDisclosure()` -> relayer `publicDecrypt` -> `finalizeSupplyDisclosure(uint64,bytes)`     | Individual balances                 | Total issued shares, record block, and KMS proof verification            |
-| Distributions     | `pause()` -> `DividendDistributor.declare()` -> `payBatch()`                                           | Each investor balance and payout    | Pool amount, distribution id, batch investor addresses, and paid flag    |
+| Distributions     | `pause()` -> `DividendDistributor.declare()` -> `claim()`                                              | Each investor balance and payout    | Pool amount, distribution id, and each investor's claim status           |
 | Resolutions       | self-delegate -> `propose()` -> encrypted `castVote()` -> `requestTally()` -> `settle(bool,bytes)`     | Vote direction and weight per voter | Pass/fail outcome and which addresses voted                              |
 | Observer access   | `setObserver(account, observer)` -> `/auditor` decrypts `confidentialBalanceOf(account)`               | Everyone else still sees ciphertext | Holder-chosen observer can decrypt that holder's share balance           |
 | Buyback (tender)  | `openOffer(price, cap)` -> encrypted `tender(qty)` -> `requestTotal()` -> `settleTotal()` -> `claim()` | Each holder's tendered quantity     | Price, cap, aggregate tendered, and whether oversubscribed               |
@@ -129,8 +129,8 @@ checkpointed `getPastVotes` weight, then discloses only the encrypted comparison
   allocations it mints.
 - Observer removal is prospective only. Values already shared remain decryptable by the former observer.
 - `mcUSD` is an open-mint testnet mock with no value.
-- `payBatch`'s real per-transaction ceiling is **measured, not guessed**: 12 investors succeeds, 13 reverts (probed with
-  `staticCall` on Sepolia; see the benchmark table in `docs/E2E-RUN.md` for gas numbers and tx hashes).
+- `claim()` removes any fixed-size user-facing payout batch requirement. The legacy `payBatch` path remains available
+  for admin operations, but users now collect payouts by individual `claim()` calls.
 - `pool * totalShares <= 2^64` is enforced before distribution declaration so encrypted `euint64` payout math cannot
   overflow. With a fresh, non-stale supply disclosure, no holder balance can exceed the denominator.
 - Shares are whole units with `decimals() == 0`, matching private-company share ledgers.
@@ -162,10 +162,26 @@ checkpointed encrypted voting power; and `ERC7984ObserverAccess` for holder-appo
 The custom code adds the supply disclosure flow, trusted module registry, pro-rata distributor, outcome-only resolution
 modules (v1-v3), a confidential buyback, cliff-vesting, a compliant issuance gate, an M-of-N enforcement guardian, a
 one-time demo share faucet, and testnet mcUSD token. The local FHEVM mock test suite currently covers all of the above:
-**41 tests** across issuance, disclosure, distributions, stale-supply rejection, outcome-only resolutions and quorum,
+**70 tests** across issuance, disclosure, distributions, stale-supply rejection, outcome-only resolutions and quorum,
 shareholder-initiated proposals, observer access, compliance controls, demo faucet claims, the confidential buyback
 (both full-fill and pro-rata-oversubscribed paths), vesting (cliff catch-up, linear release, revocation), gated
 issuance, and the guardian's quorum/timelock/execution flow.
+
+## Economic model verdict
+
+- **Dividend record-date flow (pause -> declare -> claim):** `standard`
+  - Enforces an auditable record-date workflow and does not use ongoing free-float snapshots for payout math.
+- **Share class depth and economics (single class only):** `non-standard`
+  - Only one class is implemented; no common/preferred split, preference ladder, or conversion/anti-dilution mechanics.
+- **Unvested grants in economic rights:** `standard`
+  - Unvested grant principal is escrowed in `VestingSchedule`; only the released amount is accessible to the
+    beneficiary.
+- **Tender-offer mechanics:** `non-standard`
+  - Technically coherent on-chain, but offer terms and settlement cadence are entirely issuer-controlled.
+- **`claim()` execution model:** `standard`
+  - Payout collection is investor-initiated, which removes the historical per-transaction batch-coverage assumption.
+- **Overall:** `non-standard`
+  - A robust confidentiality primitive for a narrowly scoped workflow, not a full production cap-table replacement.
 
 ## Getting Started
 
@@ -186,7 +202,7 @@ cd web && npm i && npm run dev
 | `npx hardhat scenario:disclose --network sepolia`                                                    | Publicly disclose total supply with proof         |
 | `npx hardhat scenario:fund --network sepolia --amount 10000`                                         | Mint mcUSD to deployer and approve distributor    |
 | `npx hardhat scenario:declare --network sepolia --pool 10000`                                        | Pause if needed, then declare a distribution pool |
-| `npx hardhat scenario:pay --network sepolia --id 0 --investors 0x...,0x...`                          | Pay a paused distribution batch, then unpause     |
+| `npx hardhat scenario:claim --network sepolia --id 0`                                                | Claim a distribution payout as an investor        |
 | `npx hardhat scenario:delegate --network sepolia --signer 1`                                         | Self-delegate voting power for a signer           |
 | `npx hardhat scenario:propose --network sepolia --text "Approve the Series A financing" --blocks 40` | Create a resolution                               |
 | `npx hardhat scenario:vote --network sepolia --id 0 --support true --signer 1`                       | Cast an encrypted vote                            |
@@ -197,22 +213,26 @@ cd web && npm i && npm run dev
 ## Deployed Contracts
 
 Round-two contracts were redeployed on Sepolia on 2026-07-03 and source-verified on both Etherscan and Sourcify (partial
-match).
+match). The active distributor was swapped on 2026-07-07 to add pull-based `claim()` payouts without redeploying the
+share token, then rotated again the same day to restore the explicit `payBatch` batch-size guard while keeping
+`claim()`.
 
-| Contract                                     | Address                                      | Etherscan                                                                                        | Sourcify                                                                                                                |
-| -------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| `CharterShares`                              | `0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A` | [verified](https://sepolia.etherscan.io/address/0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A/) |
-| `MockConfidentialUSD`                        | `0xb6B08dC3014D944231E01Ad5a0292Efeea859112` | [verified](https://sepolia.etherscan.io/address/0xb6B08dC3014D944231E01Ad5a0292Efeea859112#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xb6B08dC3014D944231E01Ad5a0292Efeea859112/) |
-| `DividendDistributor`                        | `0x42C8c19fbC1E2F5649d540237759E7bFee5617b9` | [verified](https://sepolia.etherscan.io/address/0x42C8c19fbC1E2F5649d540237759E7bFee5617b9#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x42C8c19fbC1E2F5649d540237759E7bFee5617b9/) |
-| `CharterResolutions` (v1, history)           | `0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3` | [verified](https://sepolia.etherscan.io/address/0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3/) |
-| `CharterResolutionsV2` (v2, history)         | `0x88f7337CCdD92Cd4B27509edBA3b3bb66a34e4e2` | [verified](https://sepolia.etherscan.io/address/0x88f7337CCdD92Cd4B27509edBA3b3bb66a34e4e2#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x88f7337CCdD92Cd4B27509edBA3b3bb66a34e4e2/) |
-| `CharterResolutionsV3` (active governance)   | `0x4561F5E4515C674382141452C043E53F1f8fA5FF` | [verified](https://sepolia.etherscan.io/address/0x4561F5E4515C674382141452C043E53F1f8fA5FF#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x4561F5E4515C674382141452C043E53F1f8fA5FF/) |
-| `ConfidentialTenderOffer` (buyback)          | `0xd61aCcaC2F89F78016F22861156c4F9121edE575` | [verified](https://sepolia.etherscan.io/address/0xd61aCcaC2F89F78016F22861156c4F9121edE575#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xd61aCcaC2F89F78016F22861156c4F9121edE575/) |
-| `VestingSchedule` (cliff + linear vesting)   | `0xa66E2749A411a9cC3e7eedA33f5097d0D1dB06A1` | [verified](https://sepolia.etherscan.io/address/0xa66E2749A411a9cC3e7eedA33f5097d0D1dB06A1#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xa66E2749A411a9cC3e7eedA33f5097d0D1dB06A1/) |
-| `AccreditationRegistry` (allowlist)          | `0x737461559C405b173288d8E8a42F6CD1711A356E` | [verified](https://sepolia.etherscan.io/address/0x737461559C405b173288d8E8a42F6CD1711A356E#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x737461559C405b173288d8E8a42F6CD1711A356E/) |
-| `GatedIssuance` (compliant issuance path)    | `0xB426cF0e43037e1eA02D6eb2F8886394E708F1CA` | [verified](https://sepolia.etherscan.io/address/0xB426cF0e43037e1eA02D6eb2F8886394E708F1CA#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xB426cF0e43037e1eA02D6eb2F8886394E708F1CA/) |
-| `ForceTransferGuardian` (M-of-N enforcement) | `0x881dFcb218bF739BeEBCd82e5cd7F91193aF0AE7` | [verified](https://sepolia.etherscan.io/address/0x881dFcb218bF739BeEBCd82e5cd7F91193aF0AE7#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x881dFcb218bF739BeEBCd82e5cd7F91193aF0AE7/) |
-| `DemoShareFaucet`                            | `0x9AF5A8e7d036E4347D0458748D9bC27131D0710C` | [verified](https://sepolia.etherscan.io/address/0x9AF5A8e7d036E4347D0458748D9bC27131D0710C#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x9AF5A8e7d036E4347D0458748D9bC27131D0710C/) |
+| Contract                                          | Address                                      | Etherscan                                                                                        | Sourcify                                                                                                                |
+| ------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `CharterShares`                                   | `0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A` | [verified](https://sepolia.etherscan.io/address/0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A/) |
+| `MockConfidentialUSD`                             | `0xb6B08dC3014D944231E01Ad5a0292Efeea859112` | [verified](https://sepolia.etherscan.io/address/0xb6B08dC3014D944231E01Ad5a0292Efeea859112#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xb6B08dC3014D944231E01Ad5a0292Efeea859112/) |
+| `DividendDistributor` (active guarded claim path) | `0xd8562d7609c0E05DdD9ba4653cE90646bf2eB3b4` | [deployed](https://sepolia.etherscan.io/address/0xd8562d7609c0E05DdD9ba4653cE90646bf2eB3b4#code) | Verification pending (Etherscan timeout, Sourcify v1 brownout)                                                          |
+| `DividendDistributor` (previous claim path)       | `0x087966338018456ED2079D3D3d67F7A1B16e40c6` | [deployed](https://sepolia.etherscan.io/address/0x087966338018456ED2079D3D3d67F7A1B16e40c6#code) | Verification pending (Etherscan timeout, Sourcify v1 brownout)                                                          |
+| `DividendDistributor` (legacy payBatch)           | `0x42C8c19fbC1E2F5649d540237759E7bFee5617b9` | [verified](https://sepolia.etherscan.io/address/0x42C8c19fbC1E2F5649d540237759E7bFee5617b9#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x42C8c19fbC1E2F5649d540237759E7bFee5617b9/) |
+| `CharterResolutions` (v1, history)                | `0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3` | [verified](https://sepolia.etherscan.io/address/0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x7FE785A2ec9cFb10283fAB7aE6d2c2d3Ad5662B3/) |
+| `CharterResolutionsV2` (v2, history)              | `0x88f7337CCdD92Cd4B27509edBA3b3bb66a34e4e2` | [verified](https://sepolia.etherscan.io/address/0x88f7337CCdD92Cd4B27509edBA3b3bb66a34e4e2#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x88f7337CCdD92Cd4B27509edBA3b3bb66a34e4e2/) |
+| `CharterResolutionsV3` (active governance)        | `0x4561F5E4515C674382141452C043E53F1f8fA5FF` | [verified](https://sepolia.etherscan.io/address/0x4561F5E4515C674382141452C043E53F1f8fA5FF#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x4561F5E4515C674382141452C043E53F1f8fA5FF/) |
+| `ConfidentialTenderOffer` (buyback)               | `0xd61aCcaC2F89F78016F22861156c4F9121edE575` | [verified](https://sepolia.etherscan.io/address/0xd61aCcaC2F89F78016F22861156c4F9121edE575#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xd61aCcaC2F89F78016F22861156c4F9121edE575/) |
+| `VestingSchedule` (cliff + linear vesting)        | `0xa66E2749A411a9cC3e7eedA33f5097d0D1dB06A1` | [verified](https://sepolia.etherscan.io/address/0xa66E2749A411a9cC3e7eedA33f5097d0D1dB06A1#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xa66E2749A411a9cC3e7eedA33f5097d0D1dB06A1/) |
+| `AccreditationRegistry` (allowlist)               | `0x737461559C405b173288d8E8a42F6CD1711A356E` | [verified](https://sepolia.etherscan.io/address/0x737461559C405b173288d8E8a42F6CD1711A356E#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x737461559C405b173288d8E8a42F6CD1711A356E/) |
+| `GatedIssuance` (compliant issuance path)         | `0xB426cF0e43037e1eA02D6eb2F8886394E708F1CA` | [verified](https://sepolia.etherscan.io/address/0xB426cF0e43037e1eA02D6eb2F8886394E708F1CA#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xB426cF0e43037e1eA02D6eb2F8886394E708F1CA/) |
+| `ForceTransferGuardian` (M-of-N enforcement)      | `0x881dFcb218bF739BeEBCd82e5cd7F91193aF0AE7` | [verified](https://sepolia.etherscan.io/address/0x881dFcb218bF739BeEBCd82e5cd7F91193aF0AE7#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x881dFcb218bF739BeEBCd82e5cd7F91193aF0AE7/) |
+| `DemoShareFaucet`                                 | `0x9AF5A8e7d036E4347D0458748D9bC27131D0710C` | [verified](https://sepolia.etherscan.io/address/0x9AF5A8e7d036E4347D0458748D9bC27131D0710C#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x9AF5A8e7d036E4347D0458748D9bC27131D0710C/) |
 
 ## Composes With
 
@@ -228,10 +248,16 @@ two steps, each by deploying a new module against the **same share token** and r
 - **v1 -> v2** added a minimum-participation quorum, so a resolution can no longer pass on a single vote.
 - **v2 -> v3** opened proposal rights to any self-delegated shareholder (not just the issuer), so a holder can drive the
   entire governance loop themselves: activate voting, propose, vote, and settle.
+- **payBatch -> claim** replaced the issuer-pushed dividend path with an investor-pulled distributor module, then the
+  distributor was rotated once more to restore `payBatch`'s explicit `MAX_PAY_BATCH` guard. The same `CharterShares`
+  contract now trusts `0xd8562d7609c0E05DdD9ba4653cE90646bf2eB3b4`; both prior distributor generations were revoked from
+  the module registry after their swaps.
 
-All three modules remain verified on-chain (see the addresses table); the frontend points at v3. Quorum is enforced on
-the public voter count, so nothing that was previously private is leaked. This v1 -> v2 -> v3 lineage is the module
-registry working exactly as intended: behaviour beneath the equity ledger is swappable without disturbing the ledger.
+The governance modules remain verified on-chain (see the addresses table), and the current distributor is deployed and
+exercised live; its source verification is pending only because the explorer verification services returned a timeout
+and Sourcify v1 brownout. The frontend points at v3 governance. Quorum is enforced on the public voter count, so nothing
+that was previously private is leaked. This v1 -> v2 -> v3 lineage is the module registry working exactly as intended:
+behaviour beneath the equity ledger is swappable without disturbing the ledger.
 
 The same registry extends to secondary-market mechanics: `ConfidentialTenderOffer` is a registered module that runs a
 confidential share buyback. Holders tender an encrypted quantity, only the aggregate is disclosed (with a KMS proof),

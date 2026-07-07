@@ -107,8 +107,6 @@ function IssuerConsole() {
   const [mintAmount, setMintAmount] = useState("");
   const [restrictAddr, setRestrictAddr] = useState("");
   const [poolAmount, setPoolAmount] = useState("");
-  const [payoutId, setPayoutId] = useState("");
-  const [payoutList, setPayoutList] = useState("");
   const issuerAuthorized = isAdmin || isAgent;
 
   const distributionHistory = (
@@ -264,7 +262,7 @@ function IssuerConsole() {
           <Card
             eyebrow="Dividend declaration"
             title="Declare a distribution"
-            subtitle="The pool total is public and verifiable; every individual payout stays encrypted. Demo funds are minted by the mcUSD test token and pulled by the distributor."
+            subtitle="The pool total is public and verifiable; every individual payout stays encrypted. Holders claim by id after declaration."
           >
             <div className="flex flex-col gap-4">
               <Field
@@ -301,22 +299,11 @@ function IssuerConsole() {
           </Card>
 
           <Card
-            eyebrow="Batch execution"
-            title="Pay a distribution"
-            subtitle="Shares must remain paused from declare through payBatch. Keep batches to ~15 investors per transaction."
+            eyebrow="Distribution execution"
+            title="Record-date control"
+            subtitle="Keep shares paused from declaration through manual payout or when holders are claiming."
           >
             <div className="flex flex-col gap-4">
-              <Field label="Distribution ID">
-                <Input
-                  placeholder="0"
-                  inputMode="numeric"
-                  value={payoutId}
-                  onChange={(e) => setPayoutId(e.target.value)}
-                />
-              </Field>
-              <Field label="Investor wallets" helper="Comma-separated addresses.">
-                <Input placeholder="0x..., 0x..." value={payoutList} onChange={(e) => setPayoutList(e.target.value)} />
-              </Field>
               <div className="flex flex-wrap gap-3">
                 <Button
                   variant="ghost"
@@ -327,20 +314,6 @@ function IssuerConsole() {
                   }
                 >
                   {paused ? "Unpause transfers" : "Pause (set record date)"}
-                </Button>
-                <Button
-                  disabled={!paused || payoutId === "" || !payoutList}
-                  onClick={() =>
-                    run("Batch payout", async () => {
-                      const list = payoutList
-                        .split(",")
-                        .map((a) => a.trim())
-                        .filter(Boolean);
-                      return (await distributor!.payBatch(BigInt(payoutId), list)).wait();
-                    })
-                  }
-                >
-                  Pay batch
                 </Button>
               </div>
             </div>

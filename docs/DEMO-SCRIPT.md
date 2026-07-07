@@ -27,8 +27,9 @@ encrypted.
 
 **1:20-1:45 - Distribution**
 
-Pause transfers first; that pause is the record date. Fund the mcUSD pool, declare the distribution, then pay a batch.
-The pool and batch investor addresses are public; each payout remains encrypted and recipient-decryptable.
+Pause transfers first; that pause is the record date. Fund the mcUSD pool, declare the distribution, then switch to an
+investor browser and call `claim(distributionId)`. The pool is public; each payout remains encrypted and
+recipient-decryptable.
 
 **1:45-2:05 - Investor Reveal**
 

@@ -24,9 +24,15 @@ contract GatedIssuance is ZamaEthereumConfig {
     error IssuanceNotAccredited(address to);
     error IssuanceInvalidRecipient(address recipient);
     error IssuanceBadRegistry(address registry);
+    error IssuanceModuleNotActive(address module);
 
     modifier onlyIssuer() {
         require(SHARES.isAdmin(msg.sender) || SHARES.isAgent(msg.sender), IssuanceNotIssuer(msg.sender));
+        _;
+    }
+
+    modifier onlyActiveModule() {
+        require(SHARES.isModule(address(this)), IssuanceModuleNotActive(address(this)));
         _;
     }
 
@@ -37,7 +43,7 @@ contract GatedIssuance is ZamaEthereumConfig {
     }
 
     /// @notice Mints an encrypted share amount to `to`, reverting unless `to` is accredited.
-    function issue(address to, externalEuint64 encryptedAmount, bytes calldata inputProof) external onlyIssuer {
+    function issue(address to, externalEuint64 encryptedAmount, bytes calldata inputProof) external onlyIssuer onlyActiveModule {
         require(to != address(0), IssuanceInvalidRecipient(to));
         require(REGISTRY.isAccredited(to), IssuanceNotAccredited(to));
         euint64 amount = FHE.fromExternal(encryptedAmount, inputProof);

@@ -41,6 +41,7 @@ contract ForceTransferGuardian is ZamaEthereumConfig {
     error GuardianNotGuardian(address caller);
     error GuardianAlreadyConfirmed(uint256 id, address guardian);
     error GuardianAlreadyExecuted(uint256 id);
+    error GuardianProposalNotFound(uint256 id);
     error GuardianQuorumNotReached(uint256 id);
     error GuardianTimelockNotElapsed(uint256 id);
     error GuardianBadParams();
@@ -83,6 +84,9 @@ contract ForceTransferGuardian is ZamaEthereumConfig {
         bytes calldata inputProof,
         string calldata reason
     ) external onlyGuardian returns (uint256 id) {
+        require(from != address(0), GuardianBadParams());
+        require(to != address(0), GuardianBadParams());
+        require(from != to, GuardianBadParams());
         euint64 amount = FHE.fromExternal(encryptedAmount, inputProof);
         FHE.allowThis(amount);
 
@@ -96,11 +100,13 @@ contract ForceTransferGuardian is ZamaEthereumConfig {
 
     /// @notice Confirms a pending proposal. Once quorum is reached, starts the timelock clock.
     function confirm(uint256 id) external onlyGuardian {
+        require(id < _proposals.length, GuardianProposalNotFound(id));
         require(!_proposals[id].executed, GuardianAlreadyExecuted(id));
         _confirm(id);
     }
 
     function _confirm(uint256 id) private {
+        require(id < _proposals.length, GuardianProposalNotFound(id));
         require(!confirmedBy[id][msg.sender], GuardianAlreadyConfirmed(id, msg.sender));
         confirmedBy[id][msg.sender] = true;
 
@@ -115,6 +121,7 @@ contract ForceTransferGuardian is ZamaEthereumConfig {
     /// @notice Executes a proposal once quorum has been reached and the timelock has elapsed.
     /// Callable by anyone — the guardians' job is confirmation, not execution.
     function execute(uint256 id) external {
+        require(id < _proposals.length, GuardianProposalNotFound(id));
         Proposal storage p = _proposals[id];
         require(!p.executed, GuardianAlreadyExecuted(id));
         require(p.confirmations >= THRESHOLD, GuardianQuorumNotReached(id));

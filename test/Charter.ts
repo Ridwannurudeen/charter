@@ -118,6 +118,21 @@ describe("Charter", function () {
     return fhevm.userDecryptEuint(FhevmType.euint64, handle, mcUSDAddress, holder);
   }
 
+  async function refreshSupplyDisclosure() {
+    if (!(await shares.supplyDisclosureStale())) {
+      return;
+    }
+    await (await shares.requestSupplyDisclosure()).wait();
+    const supplyHandle = await shares.confidentialTotalSupply();
+    const result = await fhevm.publicDecrypt([supplyHandle]);
+    await (
+      await shares.finalizeSupplyDisclosure(
+        result.clearValues[supplyHandle as `0x${string}`] as bigint,
+        result.decryptionProof,
+      )
+    ).wait();
+  }
+
   describe("issuance", function () {
     it("agent mints encrypted share allocations to investors", async function () {
       await mintShares(signers.alice, ALICE_SHARES);
@@ -175,6 +190,13 @@ describe("Charter", function () {
   });
 
   describe("distributions", function () {
+    beforeEach(async function () {
+      await refreshSupplyDisclosure();
+      if (await shares.paused()) {
+        await (await shares.unpause()).wait();
+      }
+    });
+
     it("issuer funds treasury and approves the distributor", async function () {
       await (await mcUSD.mint(signers.issuer.address, 2n * POOL)).wait();
       const until = (await ethers.provider.getBlock("latest"))!.timestamp + 1_000_000;
@@ -189,6 +211,15 @@ describe("Charter", function () {
       );
     });
 
+    it("rejects declaring a distribution to the zero address token", async function () {
+      await (await shares.pause()).wait();
+      await expect(distributor.declare(ethers.ZeroAddress, POOL)).to.be.revertedWithCustomError(
+        distributor,
+        "DistributorInvalidToken",
+      );
+      await (await shares.unpause()).wait();
+    });
+
     it("issuer declares a distribution at the record-date pause", async function () {
       await (await shares.pause()).wait();
       await (await distributor.declare(mcUSDAddress, POOL)).wait();
@@ -198,11 +229,24 @@ describe("Charter", function () {
     });
 
     it("refuses to pay while share transfers are live (no record date)", async function () {
-      await (await shares.unpause()).wait();
+      if (await shares.paused()) {
+        await (await shares.unpause()).wait();
+      }
       await expect(distributor.payBatch(0, [signers.alice.address])).to.be.revertedWithCustomError(
         distributor,
         "DistributorSharesNotPaused",
       );
+    });
+
+    it("rejects payBatch calls above the explicit batch-size guard", async function () {
+      const batch = (await ethers.getSigners()).slice(7, 20).map((signer) => signer.address);
+      expect(batch).to.have.length(13);
+      await (await shares.pause()).wait();
+      await expect(distributor.payBatch(0, batch)).to.be.revertedWithCustomError(
+        distributor,
+        "DistributorBatchTooLarge",
+      );
+      await (await shares.unpause()).wait();
     });
 
     it("pays each investor their exact pro-rata cut, encrypted", async function () {
@@ -215,14 +259,62 @@ describe("Charter", function () {
       expect(await decryptUSDOf(signers.carol)).to.eq((POOL * BigInt(CAROL_SHARES)) / BigInt(TOTAL_SHARES));
     });
 
-    it("rejects oversized payment batches", async function () {
-      const investors = (await ethers.getSigners()).slice(0, 13).map((account) => account.address);
+    it("lets every investor claim distribution proceeds independently (including 15 claimants)", async function () {
+      const signers15 = (await ethers.getSigners()).slice(9, 24);
+      expect(signers15).to.have.length(15);
+      const amounts = signers15.map((_, index) => 1000n + BigInt(index));
+      for (let i = 0; i < signers15.length; i++) {
+        await mintShares(signers15[i], Number(amounts[i]));
+      }
+      await refreshSupplyDisclosure();
+      await (await mcUSD.mint(signers.issuer.address, 100_000n)).wait();
+      const until = (await ethers.provider.getBlock("latest"))!.timestamp + 1_000_000;
+      await (await mcUSD.connect(signers.issuer).setOperator(distributorAddress, until)).wait();
+
+      await (await shares.pause()).wait();
+      await (await distributor.declare(mcUSDAddress, 15_000n)).wait();
+      const id = (await distributor.distributionCount()) - 1n;
+
+      try {
+        const before = signers15.map(() => 0n);
+        const totalShares = (await distributor.getDistribution(id)).totalShares;
+        for (const holder of signers15) {
+          await (await distributor.connect(holder).claim(id)).wait();
+        }
+        const after: bigint[] = [];
+        for (const holder of signers15) {
+          after.push(await decryptUSDOf(holder));
+        }
+
+        for (let i = 0; i < signers15.length; i++) {
+          const expected = (15_000n * amounts[i]) / totalShares;
+          expect(after[i] - before[i]).to.eq(expected);
+        }
+      } finally {
+        if (await shares.paused()) {
+          await (await shares.unpause()).wait();
+        }
+      }
+    });
+
+    it("cannot claim the same distribution twice", async function () {
       await (await shares.pause()).wait();
       await (await distributor.declare(mcUSDAddress, 1_000n)).wait();
       const id = (await distributor.distributionCount()) - 1n;
-      await expect(distributor.payBatch(id, investors)).to.be.revertedWithCustomError(
+      await (await distributor.connect(signers.alice).claim(id)).wait();
+      await expect(distributor.connect(signers.alice).claim(id)).to.be.revertedWithCustomError(
         distributor,
-        "DistributorBatchTooLarge",
+        "DistributorAlreadyPaid",
+      );
+      await (await shares.unpause()).wait();
+    });
+
+    it("rejects payout with an unknown distribution id", async function () {
+      const unknownId = (await distributor.distributionCount()) + 1_000n;
+      await (await shares.pause()).wait();
+      await expect(distributor.payBatch(unknownId, [signers.alice.address])).to.be.revertedWithCustomError(
+        distributor,
+        "DistributorInvalidDistribution",
       );
       await (await shares.unpause()).wait();
     });
@@ -232,6 +324,31 @@ describe("Charter", function () {
       await expect(distributor.payBatch(0, [signers.alice.address])).to.be.revertedWithCustomError(
         distributor,
         "DistributorAlreadyPaid",
+      );
+      await (await shares.unpause()).wait();
+    });
+
+    it("rejects payout when supply disclosure is stale after declaration", async function () {
+      await (await shares.requestSupplyDisclosure()).wait();
+      const supplyHandle = await shares.confidentialTotalSupply();
+      const supplyResult = await fhevm.publicDecrypt([supplyHandle]);
+      await (
+        await shares.finalizeSupplyDisclosure(
+          supplyResult.clearValues[supplyHandle as `0x${string}`] as bigint,
+          supplyResult.decryptionProof,
+        )
+      ).wait();
+
+      await (await shares.pause()).wait();
+      await (await distributor.declare(mcUSDAddress, 1_000n)).wait();
+      const id = (await distributor.distributionCount()) - 1n;
+      await (await shares.unpause()).wait();
+      await mintShares(signers.issuer, 1);
+
+      await (await shares.pause()).wait();
+      await expect(distributor.payBatch(id, [signers.alice.address])).to.be.revertedWithCustomError(
+        distributor,
+        "DistributorStaleSupply",
       );
       await (await shares.unpause()).wait();
     });
@@ -253,6 +370,25 @@ describe("Charter", function () {
 
       expect(issuerAfter).to.be.gt(issuerBefore);
       expect(aliceAfterBatch).to.be.gt(0);
+      await (await shares.setModule(distributorAddress, true)).wait();
+    });
+
+    it("recovers distributor leftovers through batch recovery before re-enabling", async function () {
+      const leftOverPool = 12_000n;
+      await (await shares.pause()).wait();
+      await (await distributor.declare(mcUSDAddress, leftOverPool)).wait();
+      const id = (await distributor.distributionCount()) - 1n;
+
+      const issuerBefore = await decryptUSDOf(signers.issuer);
+      await (await distributor.payBatch(id, [signers.alice.address])).wait();
+
+      await (
+        await shares.disableModuleAndRecoverBatch(distributorAddress, [mcUSDAddress], signers.issuer.address)
+      ).wait();
+      const issuerAfter = await decryptUSDOf(signers.issuer);
+
+      expect(issuerAfter).to.be.gt(issuerBefore);
+      await (await shares.unpause()).wait();
       await (await shares.setModule(distributorAddress, true)).wait();
     });
 
@@ -283,6 +419,11 @@ describe("Charter", function () {
     });
 
     it("rejects a stale disclosed supply after new issuance", async function () {
+      await (await shares.requestSupplyDisclosure()).wait();
+      const baselineHandle = await shares.confidentialTotalSupply();
+      const baselineResult = await fhevm.publicDecrypt([baselineHandle]);
+      const baselineSupply = baselineResult.clearValues[baselineHandle as `0x${string}`] as bigint;
+
       await mintShares(signers.auditor, AUDITOR_EXTRA_SHARES);
       expect(await shares.supplyDisclosureStale()).to.eq(true);
 
@@ -297,7 +438,7 @@ describe("Charter", function () {
       const supplyHandle = await shares.confidentialTotalSupply();
       const result = await fhevm.publicDecrypt([supplyHandle]);
       const clearSupply = result.clearValues[supplyHandle as `0x${string}`] as bigint;
-      expect(clearSupply).to.eq(TOTAL_SHARES + AUDITOR_EXTRA_SHARES);
+      expect(clearSupply).to.eq(baselineSupply + BigInt(AUDITOR_EXTRA_SHARES));
 
       await (await shares.finalizeSupplyDisclosure(clearSupply, result.decryptionProof)).wait();
       expect(await shares.supplyDisclosureStale()).to.eq(false);
@@ -486,6 +627,9 @@ describe("Charter", function () {
       const ethSigners = await ethers.getSigners();
       seller1 = ethSigners[7];
       seller2 = ethSigners[8];
+      if (await shares.paused()) {
+        await (await shares.unpause()).wait();
+      }
 
       const factory = await ethers.getContractFactory("ConfidentialTenderOffer");
       tender = (await factory.deploy(sharesAddress)) as unknown as ConfidentialTenderOffer;
@@ -517,6 +661,13 @@ describe("Charter", function () {
       await (await tender.settleTotal(id, total, result.decryptionProof)).wait();
       return total;
     };
+
+    it("rejects opening a tender offer with the zero address token", async function () {
+      await expect(tender.openOffer(ethers.ZeroAddress, 2, 1_000, 20)).to.be.revertedWithCustomError(
+        tender,
+        "TenderInvalidToken",
+      );
+    });
 
     it("fills every tender when undersubscribed, paying sellers in ciphertext", async function () {
       const price = 2;
@@ -568,7 +719,7 @@ describe("Charter", function () {
     it("cannot pay more than shares still held at claim time", async function () {
       const price = 2;
       const holders = await ethers.getSigners();
-      const holder = holders[15];
+      const holder = holders[24];
       await (await tender.openOffer(mcUSDAddress, price, 4_000, 20)).wait();
       const id = (await tender.offerCount()) - 1n;
 
@@ -584,15 +735,13 @@ describe("Charter", function () {
       await (await mcUSD.mint(holder.address, 1_000n)).wait();
       const cashBefore = await decryptUSDOf(holder);
 
-      const transferOutInput = await fhevm.createEncryptedInput(sharesAddress, holder.address)
-        .add64(10_000)
-        .encrypt();
+      const transferOutInput = await fhevm.createEncryptedInput(sharesAddress, holder.address).add64(10_000).encrypt();
       await (
-        await shares.connect(holder)["confidentialTransfer(address,bytes32,bytes)"](
-          signers.issuer.address,
-          transferOutInput.handles[0],
-          transferOutInput.inputProof,
-        )
+        await shares
+          .connect(holder)
+          [
+            "confidentialTransfer(address,bytes32,bytes)"
+          ](signers.issuer.address, transferOutInput.handles[0], transferOutInput.inputProof)
       ).wait();
 
       expect(await decryptSharesOf(holder)).to.eq(0n);
@@ -615,6 +764,24 @@ describe("Charter", function () {
 
       await (await shares.setModule(tenderAddress, false)).wait();
       await (await shares.recoverModuleFunds(tenderAddress, mcUSDAddress, signers.issuer.address)).wait();
+      const issuerAfter = await decryptUSDOf(signers.issuer);
+
+      expect(issuerAfter).to.be.gt(issuerBefore);
+      await (await shares.setModule(tenderAddress, true)).wait();
+    });
+
+    it("recovers tender-offer escrow through batch module recovery", async function () {
+      const price = 2;
+      await (await tender.openOffer(mcUSDAddress, price, 4_000, 20)).wait();
+      const id = (await tender.offerCount()) - 1n;
+
+      await submitTender(id, seller1, 1_000);
+      await settle(id);
+
+      const issuerBefore = await decryptUSDOf(signers.issuer);
+      await (await tender.claim(id, [seller1.address])).wait();
+
+      await (await shares.disableModuleAndRecoverBatch(tenderAddress, [mcUSDAddress], signers.issuer.address)).wait();
       const issuerAfter = await decryptUSDOf(signers.issuer);
 
       expect(issuerAfter).to.be.gt(issuerBefore);
@@ -656,6 +823,12 @@ describe("Charter", function () {
       await (await v3.connect(signers.alice).propose("After resolution closes", 20)).wait();
     });
 
+    it("auto-clears an expired unresolved proposal so the same proposer can move on", async function () {
+      await (await v3.connect(signers.alice).propose("Expired unresolved", 20)).wait();
+      await network.provider.send("hardhat_mine", ["0x100"]); // past deadline and proposal cooldown
+      await expect(v3.connect(signers.alice).propose("Fresh proposal", 20)).to.not.be.reverted;
+    });
+
     it("rejects proposals from a wallet with no voting power", async function () {
       const stranger = (await ethers.getSigners())[9];
       expect(await v3.canPropose(stranger.address)).to.eq(false);
@@ -666,11 +839,28 @@ describe("Charter", function () {
     });
 
     it("requires proposal authors to have voting handle visibility", async function () {
-      const outsider = (await ethers.getSigners())[11];
+      const outsider = (await ethers.getSigners())[25];
       await (await shares.connect(outsider).delegate(outsider.address)).wait();
       await expect(v3.connect(outsider).propose("No-op proposal", 20)).to.be.revertedWithCustomError(
         v3,
         "ResolutionsCannotPropose",
+      );
+    });
+
+    it("requires proposal authors to self-delegate", async function () {
+      await (await shares.connect(signers.alice).delegate(signers.bob.address)).wait();
+      await expect(v3.connect(signers.alice).propose("delegated outsider proposal", 20)).to.be.revertedWithCustomError(
+        v3,
+        "ResolutionsCannotPropose",
+      );
+      await (await shares.connect(signers.alice).delegate(signers.alice.address)).wait();
+    });
+
+    it("rejects proposals with an oversized voting period", async function () {
+      const maxVotingPeriod = await v3.maxVotingPeriod();
+      await expect(v3.connect(signers.alice).propose("Too long", maxVotingPeriod + 1n)).to.be.revertedWithCustomError(
+        v3,
+        "ResolutionsVotingPeriodTooLong",
       );
     });
 
@@ -718,10 +908,13 @@ describe("Charter", function () {
     const FAR_FUTURE = 4_000_000_000;
 
     before(async function () {
-      beneficiary = (await ethers.getSigners())[9];
+      beneficiary = (await ethers.getSigners())[26];
       const factory = await ethers.getContractFactory("VestingSchedule");
       vesting = (await factory.deploy(sharesAddress)) as unknown as VestingSchedule;
       vestingAddress = await vesting.getAddress();
+      if (await shares.paused()) {
+        await (await shares.unpause()).wait();
+      }
 
       await mintShares(signers.issuer, 100_000);
       await (await shares.connect(signers.issuer).setOperator(vestingAddress, FAR_FUTURE)).wait();
@@ -776,6 +969,17 @@ describe("Charter", function () {
       ).to.be.revertedWithCustomError(vesting, "VestingInvalidBeneficiary");
     });
 
+    it("rejects grants that overflow the vesting schedule clock window", async function () {
+      const nowClock = await shares.clock();
+      const maxWindow = (1n << 48n) - 1n - nowClock + 1n;
+      const input = await fhevm.createEncryptedInput(vestingAddress, signers.issuer.address).add64(1000).encrypt();
+      await expect(
+        vesting
+          .connect(signers.issuer)
+          .createGrant(beneficiary.address, input.handles[0], input.inputProof, 0, maxWindow),
+      ).to.be.revertedWithCustomError(vesting, "VestingBadSchedule");
+    });
+
     it("settles a revoked grant: pays out vested-to-date, returns the unvested remainder", async function () {
       const total = 20_000;
       const input = await fhevm.createEncryptedInput(vestingAddress, signers.issuer.address).add64(total).encrypt();
@@ -816,11 +1020,15 @@ describe("Charter", function () {
       const registryFactory = await ethers.getContractFactory("AccreditationRegistry");
       registry = (await registryFactory.deploy(signers.issuer.address)) as unknown as AccreditationRegistry;
       const registryAddress = await registry.getAddress();
+      if (await shares.paused()) {
+        await (await shares.unpause()).wait();
+      }
 
       const gatedFactory = await ethers.getContractFactory("GatedIssuance");
       gated = (await gatedFactory.deploy(sharesAddress, registryAddress)) as unknown as GatedIssuance;
       gatedAddress = await gated.getAddress();
       await (await shares.addAgent(gatedAddress)).wait();
+      await (await shares.setModule(gatedAddress, true)).wait();
     });
 
     it("refuses to mint to a wallet that has not been accredited", async function () {
@@ -830,11 +1038,24 @@ describe("Charter", function () {
       ).to.be.revertedWithCustomError(gated, "IssuanceNotAccredited");
     });
 
-    it("mints once the wallet is accredited", async function () {
+    it("remains default-deny after accreditation revocation", async function () {
       await (await registry.connect(signers.issuer).setAccredited(applicant.address, true)).wait();
       const input = await fhevm.createEncryptedInput(gatedAddress, signers.issuer.address).add64(1000).encrypt();
       await (await gated.connect(signers.issuer).issue(applicant.address, input.handles[0], input.inputProof)).wait();
-      expect(await decryptSharesOf(applicant)).to.eq(1000);
+      await (await registry.connect(signers.issuer).setAccredited(applicant.address, false)).wait();
+
+      const blocked = await fhevm.createEncryptedInput(gatedAddress, signers.issuer.address).add64(1).encrypt();
+      await expect(
+        gated.connect(signers.issuer).issue(applicant.address, blocked.handles[0], blocked.inputProof),
+      ).to.be.revertedWithCustomError(gated, "IssuanceNotAccredited");
+    });
+
+    it("mints once the wallet is accredited", async function () {
+      await (await registry.connect(signers.issuer).setAccredited(applicant.address, true)).wait();
+      const before = await decryptSharesOf(applicant);
+      const input = await fhevm.createEncryptedInput(gatedAddress, signers.issuer.address).add64(1000).encrypt();
+      await (await gated.connect(signers.issuer).issue(applicant.address, input.handles[0], input.inputProof)).wait();
+      expect((await decryptSharesOf(applicant)) - before).to.eq(1000);
     });
 
     it("rejects minting to the zero address", async function () {
@@ -856,6 +1077,15 @@ describe("Charter", function () {
         gated.connect(signers.bob).issue(applicant.address, input.handles[0], input.inputProof),
       ).to.be.revertedWithCustomError(gated, "IssuanceNotIssuer");
     });
+
+    it("blocks issuance when the gated module is unregistered in the share registry", async function () {
+      await (await shares.setModule(gatedAddress, false)).wait();
+      const input = await fhevm.createEncryptedInput(gatedAddress, signers.issuer.address).add64(1000).encrypt();
+      await expect(
+        gated.connect(signers.issuer).issue(applicant.address, input.handles[0], input.inputProof),
+      ).to.be.revertedWithCustomError(gated, "IssuanceModuleNotActive");
+      await (await shares.setModule(gatedAddress, true)).wait();
+    });
   });
 
   describe("force-transfer guardian (M-of-N, timelocked enforcement)", function () {
@@ -869,7 +1099,7 @@ describe("Charter", function () {
 
     before(async function () {
       const s = await ethers.getSigners();
-      [g1, g2, g3, recovery] = [s[11], s[12], s[13], s[14]];
+      [g1, g2, g3, recovery] = [s[24], s[25], s[28], s[29]];
       const factory = await ethers.getContractFactory("ForceTransferGuardian");
       guardian = (await factory.deploy(
         sharesAddress,
@@ -931,6 +1161,37 @@ describe("Charter", function () {
           .connect(signers.bob)
           .propose(signers.alice.address, recovery.address, input.handles[0], input.inputProof, "not a guardian"),
       ).to.be.revertedWithCustomError(guardian, "GuardianNotGuardian");
+    });
+
+    it("rejects confirm/execute calls for non-existent proposal IDs", async function () {
+      const badId = 9999n;
+      await expect(guardian.connect(g1).confirm(badId)).to.be.revertedWithCustomError(
+        guardian,
+        "GuardianProposalNotFound",
+      );
+      await expect(guardian.connect(g1).execute(badId)).to.be.revertedWithCustomError(
+        guardian,
+        "GuardianProposalNotFound",
+      );
+    });
+
+    it("rejects guardian proposals with invalid transfer endpoints", async function () {
+      const input = await fhevm.createEncryptedInput(guardianAddress, g1.address).add64(1).encrypt();
+      await expect(
+        guardian
+          .connect(g1)
+          .propose(ethers.ZeroAddress, recovery.address, input.handles[0], input.inputProof, "zero from"),
+      ).to.be.revertedWithCustomError(guardian, "GuardianBadParams");
+      await expect(
+        guardian
+          .connect(g1)
+          .propose(signers.alice.address, ethers.ZeroAddress, input.handles[0], input.inputProof, "zero to"),
+      ).to.be.revertedWithCustomError(guardian, "GuardianBadParams");
+      await expect(
+        guardian
+          .connect(g1)
+          .propose(signers.alice.address, signers.alice.address, input.handles[0], input.inputProof, "same endpoint"),
+      ).to.be.revertedWithCustomError(guardian, "GuardianBadParams");
     });
 
     it("rejects a guardian confirming the same proposal twice", async function () {
