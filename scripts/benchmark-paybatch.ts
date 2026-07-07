@@ -19,7 +19,7 @@ const SEPOLIA_FHEVM_ENV = {
   RELAYER_URL: "https://relayer.testnet.zama.org/v2",
 } as const;
 
-async function getStartNonce(signer: { getNonce: () => Promise<number> }) {
+async function getStartNonce(signer: { getNonce: (blockTag?: string) => Promise<number> }) {
   try {
     return await signer.getNonce("pending");
   } catch {
