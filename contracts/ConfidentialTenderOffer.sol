@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC7984} from "@openzeppelin/confidential-contracts/interfaces/IERC7984.sol";
 import {CharterShares} from "./CharterShares.sol";
 
@@ -18,7 +19,7 @@ import {CharterShares} from "./CharterShares.sol";
 ///
 /// The holder consents by (1) approving this contract as an operator on the share token so the
 /// buyback can pull the accepted shares, and (2) submitting an encrypted tender before the deadline.
-contract ConfidentialTenderOffer is ZamaEthereumConfig {
+contract ConfidentialTenderOffer is ZamaEthereumConfig, ReentrancyGuard {
     struct Offer {
         address treasury; // where repurchased shares go (the opener)
         address paymentToken; // confidential cash paid to sellers
@@ -38,6 +39,8 @@ contract ConfidentialTenderOffer is ZamaEthereumConfig {
     mapping(uint256 offerId => mapping(address holder => bool)) public tendered;
     mapping(uint256 offerId => mapping(address holder => bool)) public claimed;
 
+    uint256 public constant MAX_CLAIM_BATCH = 12;
+
     event OfferOpened(uint256 indexed id, address indexed token, uint64 pricePerShare, uint64 maxShares, uint48 deadline);
     event Tendered(uint256 indexed id, address holder);
     event TotalRequested(uint256 indexed id);
@@ -45,6 +48,7 @@ contract ConfidentialTenderOffer is ZamaEthereumConfig {
     event Claimed(uint256 indexed id, address[] holders);
 
     error TenderNotIssuer(address caller);
+    error TenderBatchTooLarge(uint256 count);
     error TenderBadParams();
     error TenderClosed(uint256 id);
     error TenderNotClosed(uint256 id);
@@ -89,7 +93,10 @@ contract ConfidentialTenderOffer is ZamaEthereumConfig {
     ) external onlyIssuer returns (uint256 id) {
         // Escrow (max payout) must fit euint64; this also bounds every per-holder payment.
         require(
-            pricePerShare > 0 && maxShares > 0 && uint256(pricePerShare) * maxShares <= type(uint64).max,
+            pricePerShare > 0 &&
+                maxShares > 0 &&
+                votingPeriod > 0 &&
+                uint256(pricePerShare) * maxShares <= type(uint64).max,
             TenderBadParams()
         );
 
@@ -165,9 +172,10 @@ contract ConfidentialTenderOffer is ZamaEthereumConfig {
     /// @notice Fills a batch of holders: pulls their accepted shares to the treasury and pays them
     /// in the confidential payment token. Oversubscribed offers are scaled pro-rata on ciphertext.
     /// Each holder must have approved this contract as an operator on the share token.
-    function claim(uint256 id, address[] calldata holders) external onlyIssuer {
+    function claim(uint256 id, address[] calldata holders) external onlyIssuer nonReentrant {
         Offer storage o = _offers[id];
         require(o.totalSettled, TenderNotSettled(id));
+        require(holders.length <= MAX_CLAIM_BATCH, TenderBatchTooLarge(holders.length));
         bool oversubscribed = o.totalTenderedClear > o.maxShares;
 
         IERC7984 payToken = IERC7984(o.paymentToken);

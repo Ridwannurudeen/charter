@@ -555,6 +555,16 @@ describe("Charter", function () {
       expect(s2Before - (await decryptSharesOf(seller2))).to.eq(1_000);
     });
 
+    it("rejects oversized tender claim batches", async function () {
+      const price = 2;
+      const holders = (await ethers.getSigners()).slice(0, 13).map((s) => s.address);
+      await (await tender.openOffer(mcUSDAddress, price, 4_000, 20)).wait();
+      const id = (await tender.offerCount()) - 1n;
+      await settle(id);
+
+      await expect(tender.claim(id, holders)).to.be.revertedWithCustomError(tender, "TenderBatchTooLarge");
+    });
+
     it("cannot pay more than shares still held at claim time", async function () {
       const price = 2;
       const holders = await ethers.getSigners();
