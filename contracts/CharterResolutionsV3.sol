@@ -5,15 +5,16 @@ import {FHE, ebool, euint64, externalEbool} from "@fhevm/solidity/lib/FHE.sol";
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {CharterShares} from "./CharterShares.sol";
 
-/// @title CharterResolutionsV3 — shareholder-proposed resolutions
+/// @title CharterResolutionsV3 â€” shareholder-proposed resolutions
 /// @notice The third governance module in Charter's live-upgraded lineage (v1 -> v2 -> v3), each
 /// swapped in through {CharterShares.setModule} without touching the share token. V3 keeps V2's
 /// outcome-only privacy model and participation quorum, and additionally opens proposal rights to
-/// **any self-delegated shareholder** (not just the issuer). A holder can therefore drive the whole
-/// governance loop themselves: activate voting, propose, vote, and settle — all confidential, with
+/// any self-delegated shareholder (not just the issuer). A holder can therefore drive the whole
+/// governance loop themselves: activate voting, propose, vote, and settle â€” all confidential, with
 /// only the pass/fail outcome ever disclosed.
 contract CharterResolutionsV3 is ZamaEthereumConfig {
     struct Resolution {
+        address proposer;
         string description;
         uint48 snapshot;
         uint48 deadline;
@@ -31,7 +32,12 @@ contract CharterResolutionsV3 is ZamaEthereumConfig {
     /// @notice Minimum distinct voters required for a resolution to reach quorum and be settleable.
     uint32 public immutable MIN_VOTERS;
 
+    /// @notice Minimum blocks between accepted proposals by the same proposer.
+    uint48 public proposalCooldown;
+
     Resolution[] private _resolutions;
+    mapping(address => bool) public hasActiveProposal;
+    mapping(address => uint48) public lastProposalClock;
     mapping(uint256 resolutionId => mapping(address voter => bool)) public hasVoted;
 
     event ResolutionProposed(uint256 indexed id, address indexed proposer, string description, uint48 deadline);
@@ -40,6 +46,7 @@ contract CharterResolutionsV3 is ZamaEthereumConfig {
     event ResolutionSettled(uint256 indexed id, bool passed, bool quorumReached);
 
     error ResolutionsCannotPropose(address caller);
+    error ResolutionsNotAdmin(address caller);
     error ResolutionsVotingClosed(uint256 id);
     error ResolutionsVotingNotStarted(uint256 id);
     error ResolutionsVotingNotEnded(uint256 id);
@@ -48,15 +55,34 @@ contract CharterResolutionsV3 is ZamaEthereumConfig {
     error ResolutionsNoTallyRequested(uint256 id);
     error ResolutionsAlreadyResolved(uint256 id);
     error ResolutionsQuorumNotReached(uint256 id);
+    error ResolutionsActiveProposal(address proposer);
+    error ResolutionsProposalCooldown(address proposer, uint48 availableAt);
+    error ResolutionsVotingPeriodTooShort(uint48 votingPeriod);
 
     constructor(CharterShares shares, uint32 minVoters) {
         SHARES = shares;
         MIN_VOTERS = minVoters;
+        proposalCooldown = 64;
     }
 
-    /// @notice True if `account` may open a resolution: the issuer, or any self-delegated shareholder.
+    /// @notice Sets the per-proposer minimum cooldown in clocks between accepted proposals.
+    /// @dev 0 disables the cooldown.
+    function setProposalCooldown(uint48 cooldown) external {
+        require(SHARES.isAdmin(msg.sender), ResolutionsNotAdmin(msg.sender));
+        proposalCooldown = cooldown;
+    }
+
+    /// @notice True if `account` may open a resolution: the issuer, any agent, or an active
+    /// self-delegated shareholder with voting handle visibility.
     function canPropose(address account) public view returns (bool) {
-        return SHARES.isAdmin(account) || SHARES.isAgent(account) || SHARES.delegates(account) != address(0);
+        if (SHARES.isAdmin(account) || SHARES.isAgent(account)) {
+            return true;
+        }
+        uint48 snapshot = SHARES.clock();
+        if (snapshot == 0) {
+            return false;
+        }
+        return SHARES.delegates(account) != address(0) && FHE.isInitialized(SHARES.getPastVotes(account, snapshot - 1));
     }
 
     function resolutionCount() external view returns (uint256) {
@@ -68,14 +94,22 @@ contract CharterResolutionsV3 is ZamaEthereumConfig {
     }
 
     /// @notice Proposes a resolution. Open to the issuer or any shareholder who has activated voting
-    /// power (self-delegated). Voting power snapshots at the current clock; voting opens next block.
+    /// power. Voting power snapshots at the current clock; voting opens next block.
     function propose(string calldata description, uint48 votingPeriod) external returns (uint256 id) {
         require(canPropose(msg.sender), ResolutionsCannotPropose(msg.sender));
+        require(votingPeriod > 0, ResolutionsVotingPeriodTooShort(votingPeriod));
+        require(!hasActiveProposal[msg.sender], ResolutionsActiveProposal(msg.sender));
+        if (proposalCooldown != 0 && lastProposalClock[msg.sender] != 0) {
+            uint48 nextAllowedAt = lastProposalClock[msg.sender] + proposalCooldown;
+            require(SHARES.clock() >= nextAllowedAt, ResolutionsProposalCooldown(msg.sender, nextAllowedAt));
+        }
+
         uint48 snapshot = SHARES.clock();
 
         id = _resolutions.length;
         _resolutions.push();
         Resolution storage r = _resolutions[id];
+        r.proposer = msg.sender;
         r.description = description;
         r.snapshot = snapshot;
         r.deadline = snapshot + votingPeriod;
@@ -84,6 +118,9 @@ contract CharterResolutionsV3 is ZamaEthereumConfig {
         FHE.allowThis(zero);
         r.forVotes = zero;
         r.againstVotes = zero;
+
+        lastProposalClock[msg.sender] = snapshot;
+        hasActiveProposal[msg.sender] = true;
 
         emit ResolutionProposed(id, msg.sender, description, r.deadline);
     }
@@ -121,6 +158,9 @@ contract CharterResolutionsV3 is ZamaEthereumConfig {
         Resolution storage r = _resolutions[id];
         require(SHARES.clock() > r.deadline, ResolutionsVotingNotEnded(id));
         require(!r.resolved, ResolutionsAlreadyResolved(id));
+        if (r.proposer != address(0) && hasActiveProposal[r.proposer]) {
+            hasActiveProposal[r.proposer] = false;
+        }
         r.tallyRequested = true;
 
         if (r.voterCount >= MIN_VOTERS) {
@@ -151,6 +191,9 @@ contract CharterResolutionsV3 is ZamaEthereumConfig {
 
         r.passed = passedClear;
         r.resolved = true;
+        if (r.proposer != address(0) && hasActiveProposal[r.proposer]) {
+            hasActiveProposal[r.proposer] = false;
+        }
         emit ResolutionSettled(id, passedClear, true);
     }
 }

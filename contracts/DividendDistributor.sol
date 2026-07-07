@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {IERC7984} from "@openzeppelin/confidential-contracts/interfaces/IERC7984.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {CharterShares} from "./CharterShares.sol";
 
 /// @title DividendDistributor — pro-rata distributions over encrypted holdings
@@ -15,7 +16,7 @@ import {CharterShares} from "./CharterShares.sol";
 ///
 /// Record-date integrity: declarations require the share token to be paused, so
 /// balances cannot move between the record date and payout batches.
-contract DividendDistributor is ZamaEthereumConfig {
+contract DividendDistributor is ZamaEthereumConfig, ReentrancyGuard {
     struct Distribution {
         address token;
         uint64 pool;
@@ -24,6 +25,7 @@ contract DividendDistributor is ZamaEthereumConfig {
     }
 
     CharterShares public immutable SHARES;
+    uint256 public constant MAX_PAY_BATCH = 12;
 
     Distribution[] private _distributions;
     mapping(uint256 distributionId => mapping(address investor => bool)) public paid;
@@ -35,12 +37,21 @@ contract DividendDistributor is ZamaEthereumConfig {
     error DistributorNotIssuer(address caller);
     error DistributorNoRecordSupply();
     error DistributorPoolOverflow();
+    error DistributorBatchTooLarge(uint256 count);
     error DistributorSharesNotPaused();
     error DistributorStaleSupply();
     error DistributorAlreadyPaid(uint256 id, address investor);
 
     modifier onlyIssuer() {
         require(SHARES.isAdmin(msg.sender) || SHARES.isAgent(msg.sender), DistributorNotIssuer(msg.sender));
+        _;
+    }
+
+    modifier onlyIssuerOrLedger() {
+        require(
+            SHARES.isAdmin(msg.sender) || SHARES.isAgent(msg.sender) || msg.sender == address(SHARES),
+            DistributorNotIssuer(msg.sender)
+        );
         _;
     }
 
@@ -80,9 +91,10 @@ contract DividendDistributor is ZamaEthereumConfig {
 
     /// @notice Pays a batch of investors their pro-rata cut of distribution `id`.
     /// Keep batches small (~15 investors) to stay within the per-transaction HCU budget.
-    function payBatch(uint256 id, address[] calldata investors) external onlyIssuer {
+    function payBatch(uint256 id, address[] calldata investors) external onlyIssuer nonReentrant {
         Distribution storage d = _distributions[id];
         require(SHARES.paused(), DistributorSharesNotPaused());
+        require(investors.length <= MAX_PAY_BATCH, DistributorBatchTooLarge(investors.length));
 
         IERC7984 token = IERC7984(d.token);
         for (uint256 i = 0; i < investors.length; i++) {
@@ -102,7 +114,7 @@ contract DividendDistributor is ZamaEthereumConfig {
 
     /// @notice Returns this contract's remaining balance of `token` (rounding dust,
     /// unclaimed remainders) to `to`.
-    function sweep(IERC7984 token, address to) external onlyIssuer {
+    function sweep(IERC7984 token, address to) external onlyIssuerOrLedger {
         euint64 balance = token.confidentialBalanceOf(address(this));
         if (FHE.isInitialized(balance)) {
             token.confidentialTransfer(to, balance);

@@ -44,6 +44,7 @@ contract ForceTransferGuardian is ZamaEthereumConfig {
     error GuardianQuorumNotReached(uint256 id);
     error GuardianTimelockNotElapsed(uint256 id);
     error GuardianBadParams();
+    error GuardianInvalidGuardian(address guardian);
 
     modifier onlyGuardian() {
         require(isGuardian[msg.sender], GuardianNotGuardian(msg.sender));
@@ -51,13 +52,19 @@ contract ForceTransferGuardian is ZamaEthereumConfig {
     }
 
     constructor(CharterShares shares, address[] memory guardians, uint32 threshold, uint48 timelockDelay) {
-        require(guardians.length > 0 && threshold > 0 && threshold <= guardians.length, GuardianBadParams());
+        require(guardians.length > 0 && threshold > 0, GuardianBadParams());
         SHARES = shares;
         THRESHOLD = threshold;
         TIMELOCK = timelockDelay;
+        uint256 uniqueGuardians;
         for (uint256 i = 0; i < guardians.length; i++) {
-            isGuardian[guardians[i]] = true;
+            address guardian = guardians[i];
+            require(guardian != address(0), GuardianInvalidGuardian(guardian));
+            require(!isGuardian[guardian], GuardianInvalidGuardian(guardian));
+            isGuardian[guardian] = true;
+            uniqueGuardians += 1;
         }
+        require(uint256(threshold) <= uniqueGuardians, GuardianBadParams());
     }
 
     function proposalCount() external view returns (uint256) {

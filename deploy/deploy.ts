@@ -96,7 +96,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   await execute("CharterShares", { from: deployer, log: true }, "setModule", resolutionsV3.address, true);
   await execute("CharterShares", { from: deployer, log: true }, "setModule", tenderOffer.address, true);
   await execute("CharterShares", { from: deployer, log: true }, "addAgent", deployer);
-  await execute("CharterShares", { from: deployer, log: true }, "addAgent", demoFaucet.address);
   await execute("CharterShares", { from: deployer, log: true }, "addAgent", gatedIssuance.address);
   await execute("CharterShares", { from: deployer, log: true }, "addAgent", guardian.address);
 

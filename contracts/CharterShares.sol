@@ -12,6 +12,10 @@ import {
     ERC7984ObserverAccess
 } from "@openzeppelin/confidential-contracts/token/ERC7984/extensions/ERC7984ObserverAccess.sol";
 
+interface IModuleFundsRecoverable {
+    function sweep(IERC7984 token, address to) external;
+}
+
 /// @title CharterShares — a confidential share registry for a private company
 /// @notice Company shares as an ERC7984 confidential token. Individual holdings are
 /// encrypted on-chain; only the holder (and an observer they appoint, e.g. an auditor)
@@ -39,10 +43,14 @@ contract CharterShares is ZamaEthereumConfig, ERC7984Rwa, ERC7984ObserverAccess,
     event ModuleSet(address indexed module, bool enabled);
     event SupplyDisclosureRequested(euint64 supplyHandle);
     event SupplyDisclosed(uint64 totalShares, uint48 recordTimepoint);
+    event ModuleFundsRecovered(address indexed module, address indexed token, address indexed to);
 
     error CharterNotModule(address caller);
     error CharterNoSupply();
     error CharterNoPendingDisclosure();
+    error CharterModuleStillActive(address module);
+    error CharterModuleNotActive(address module);
+    error CharterModuleZeroAddress();
 
     constructor(
         string memory name_,
@@ -58,8 +66,31 @@ contract CharterShares is ZamaEthereumConfig, ERC7984Rwa, ERC7984ObserverAccess,
 
     /// @notice Registers or removes a protocol module (distributor, resolutions).
     function setModule(address module, bool enabled) external onlyAdmin {
+        require(module != address(0), CharterModuleZeroAddress());
         isModule[module] = enabled;
         emit ModuleSet(module, enabled);
+    }
+
+    /// @notice Recovers leftover funds from a disabled module after a module swap.
+    function recoverModuleFunds(address module, IERC7984 token, address to) external onlyAdmin {
+        require(!isModule[module], CharterModuleStillActive(module));
+        require(to != address(0), CharterModuleZeroAddress());
+        require(address(token) != address(0), CharterModuleZeroAddress());
+        IModuleFundsRecoverable(module).sweep(token, to);
+        emit ModuleFundsRecovered(module, address(token), to);
+    }
+
+    /// @notice Disables a module and immediately recovers one known escrowed token balance.
+    function disableModuleAndRecover(address module, IERC7984 token, address to) external onlyAdmin {
+        require(isModule[module], CharterModuleNotActive(module));
+        require(module != address(0), CharterModuleZeroAddress());
+        require(address(token) != address(0), CharterModuleZeroAddress());
+        isModule[module] = false;
+        emit ModuleSet(module, false);
+
+        require(to != address(0), CharterModuleZeroAddress());
+        IModuleFundsRecoverable(module).sweep(token, to);
+        emit ModuleFundsRecovered(module, address(token), to);
     }
 
     /// @notice Grants the calling module transient (same-transaction) ACL access to

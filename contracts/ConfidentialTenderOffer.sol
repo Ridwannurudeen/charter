@@ -57,6 +57,11 @@ contract ConfidentialTenderOffer is ZamaEthereumConfig {
         _;
     }
 
+    modifier onlyIssuerOrLedger() {
+        require(SHARES.isAdmin(msg.sender) || SHARES.isAgent(msg.sender) || msg.sender == address(SHARES), TenderNotIssuer(msg.sender));
+        _;
+    }
+
     constructor(CharterShares shares) {
         SHARES = shares;
     }
@@ -175,11 +180,10 @@ contract ConfidentialTenderOffer is ZamaEthereumConfig {
             if (!FHE.isInitialized(qty)) continue;
 
             euint64 accepted = oversubscribed ? FHE.div(FHE.mul(qty, o.maxShares), o.totalTenderedClear) : qty;
-
             FHE.allowTransient(accepted, address(SHARES));
-            SHARES.confidentialTransferFrom(holder, o.treasury, accepted);
+            euint64 transferred = SHARES.confidentialTransferFrom(holder, o.treasury, accepted);
 
-            euint64 payment = FHE.mul(accepted, o.pricePerShare);
+            euint64 payment = FHE.mul(transferred, o.pricePerShare);
             FHE.allowTransient(payment, o.paymentToken);
             payToken.confidentialTransfer(holder, payment);
         }
@@ -187,7 +191,7 @@ contract ConfidentialTenderOffer is ZamaEthereumConfig {
     }
 
     /// @notice Returns unspent escrow (undersubscribed remainder) to a chosen address.
-    function sweep(IERC7984 token, address to) external onlyIssuer {
+    function sweep(IERC7984 token, address to) external onlyIssuerOrLedger {
         euint64 balance = token.confidentialBalanceOf(address(this));
         if (FHE.isInitialized(balance)) {
             token.confidentialTransfer(to, balance);

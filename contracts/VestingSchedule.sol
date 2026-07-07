@@ -39,6 +39,7 @@ contract VestingSchedule is ZamaEthereumConfig {
     error VestingNotBeneficiary(address caller);
     error VestingBadSchedule();
     error VestingAlreadyRevoked(uint256 id);
+    error VestingInvalidBeneficiary(address beneficiary);
 
     modifier onlyIssuer() {
         require(SHARES.isAdmin(msg.sender) || SHARES.isAgent(msg.sender), VestingNotIssuer(msg.sender));
@@ -66,6 +67,7 @@ contract VestingSchedule is ZamaEthereumConfig {
         uint48 cliffDelay,
         uint48 vestingDuration
     ) external onlyIssuer returns (uint256 id) {
+        require(beneficiary != address(0), VestingInvalidBeneficiary(beneficiary));
         require(vestingDuration > 0 && cliffDelay <= vestingDuration, VestingBadSchedule());
 
         euint64 total = FHE.fromExternal(encryptedTotal, inputProof);
