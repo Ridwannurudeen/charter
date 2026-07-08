@@ -1,75 +1,53 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: light;
-  --background: #f7f5f0;
-  --surface-1: #ffffff;
-  --surface-2: #fbfaf6;
-  --surface-3: #ffffff;
-  --border: #e6e2d8;
-  --border-strong: #d6d1c4;
-  --foreground: #14181f;
-  --muted: #55606f;
-  --faint: #8a94a4;
-  --primary: #b8860b;
-  --primary-bright: #d59a18;
-  --on-primary: #14181f;
-  --cipher: #0e9c8a;
-  --success: #147a46;
-  --danger: #b93f3f;
-  --shadow-1: 0 1px 2px rgba(20, 24, 31, 0.06), 0 12px 32px -24px rgba(20, 24, 31, 0.28);
-  --shadow-2: 0 1px 2px rgba(20, 24, 31, 0.08), 0 18px 48px -28px rgba(20, 24, 31, 0.34);
-  --shadow-3: 0 8px 24px -16px rgba(20, 24, 31, 0.45), 0 32px 80px -40px rgba(20, 24, 31, 0.35);
+  color-scheme: dark;
+  --background: #0b1018;
+  --surface-1: #101722;
+  --surface-2: #141d2a;
+  --surface-3: #1a2534;
+  --ink-panel: #0f151f;
+  --border: #243044;
+  --border-strong: #334258;
+  --foreground: #f3efe6;
+  --muted: #a8b0bf;
+  --faint: #687386;
+  --primary: #d8a94f;
+  --primary-bright: #efc76a;
+  --on-primary: #11151c;
+  --cipher: #31d7be;
+  --success: #47cf8b;
+  --danger: #e15d5d;
+  --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 48px -38px rgba(0, 0, 0, 0.85);
+  --shadow-2: 0 1px 0 rgba(255, 255, 255, 0.045), 0 26px 78px -46px rgba(0, 0, 0, 0.88);
+  --shadow-3: 0 1px 0 rgba(255, 255, 255, 0.055), 0 44px 120px -62px rgba(0, 0, 0, 0.94);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --duration-fast: 150ms;
   --duration-med: 220ms;
   --duration-slow: 320ms;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --background: #0a0e17;
-    --surface-1: #10151f;
-    --surface-2: #151c29;
-    --surface-3: #1b2434;
-    --border: #212b3d;
-    --border-strong: #2e3a50;
-    --foreground: #eef2f8;
-    --muted: #98a2b6;
-    --faint: #5e6980;
-    --primary: #e7b23c;
-    --primary-bright: #f6c85a;
-    --on-primary: #0a0e17;
-    --cipher: #57d9c7;
-    --success: #3ccb7f;
-    --danger: #f26d6d;
-    --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.03), 0 16px 48px -36px rgba(0, 0, 0, 0.75);
-    --shadow-2: 0 1px 0 rgba(255, 255, 255, 0.04), 0 22px 72px -42px rgba(0, 0, 0, 0.78);
-    --shadow-3: 0 1px 0 rgba(255, 255, 255, 0.05), 0 36px 96px -48px rgba(0, 0, 0, 0.82);
-  }
-}
-
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --background: #0a0e17;
-  --surface-1: #10151f;
-  --surface-2: #151c29;
-  --surface-3: #1b2434;
-  --border: #212b3d;
-  --border-strong: #2e3a50;
-  --foreground: #eef2f8;
-  --muted: #98a2b6;
-  --faint: #5e6980;
-  --primary: #e7b23c;
-  --primary-bright: #f6c85a;
-  --on-primary: #0a0e17;
-  --cipher: #57d9c7;
-  --success: #3ccb7f;
-  --danger: #f26d6d;
-  --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.03), 0 16px 48px -36px rgba(0, 0, 0, 0.75);
-  --shadow-2: 0 1px 0 rgba(255, 255, 255, 0.04), 0 22px 72px -42px rgba(0, 0, 0, 0.78);
-  --shadow-3: 0 1px 0 rgba(255, 255, 255, 0.05), 0 36px 96px -48px rgba(0, 0, 0, 0.82);
+:root[data-theme="light"] {
+  color-scheme: light;
+  --background: #f5efe3;
+  --surface-1: #fffaf1;
+  --surface-2: #eee4d1;
+  --surface-3: #e1d3bb;
+  --ink-panel: #ebe0cc;
+  --border: #d7c8af;
+  --border-strong: #bca982;
+  --foreground: #121820;
+  --muted: #536071;
+  --faint: #8390a0;
+  --primary: #9b6d18;
+  --primary-bright: #b98222;
+  --on-primary: #fff9ed;
+  --cipher: #0f8f80;
+  --success: #167746;
+  --danger: #b54040;
+  --shadow-1: 0 1px 2px rgba(18, 24, 32, 0.08), 0 18px 48px -36px rgba(18, 24, 32, 0.35);
+  --shadow-2: 0 1px 2px rgba(18, 24, 32, 0.1), 0 26px 78px -44px rgba(18, 24, 32, 0.4);
+  --shadow-3: 0 12px 34px -24px rgba(18, 24, 32, 0.5), 0 46px 110px -64px rgba(18, 24, 32, 0.45);
 }
 
 @theme inline {
@@ -78,6 +56,7 @@
   --color-surface-1: var(--surface-1);
   --color-surface-2: var(--surface-2);
   --color-surface-3: var(--surface-3);
+  --color-ink-panel: var(--ink-panel);
   --color-raised: var(--surface-2);
   --color-line: var(--border);
   --color-line-strong: var(--border-strong);
@@ -93,10 +72,10 @@
   --font-display: var(--font-display);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
 }
 
 * {
@@ -110,7 +89,8 @@ html {
 body {
   min-height: 100dvh;
   background:
-    radial-gradient(ellipse 80% 38% at 50% -12%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 72%),
+    radial-gradient(ellipse 72% 38% at 50% -10%, color-mix(in srgb, var(--cipher) 15%, transparent), transparent 68%),
+    radial-gradient(ellipse 48% 26% at 82% 18%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 78%),
     var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
@@ -126,17 +106,15 @@ body::after {
 }
 
 body::before {
-  opacity: 0.42;
-  background-image:
-    linear-gradient(rgba(128, 128, 128, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(128, 128, 128, 0.045) 1px, transparent 1px);
-  background-size: 42px 42px;
-  mask-image: radial-gradient(ellipse 86% 72% at 50% 0%, #000 24%, transparent 86%);
+  opacity: 0.5;
+  background-image: radial-gradient(color-mix(in srgb, var(--muted) 18%, transparent) 1px, transparent 1px);
+  background-size: 30px 30px;
+  mask-image: radial-gradient(ellipse 90% 80% at 50% 0%, #000 28%, transparent 92%);
 }
 
 body::after {
-  opacity: 0.18;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+  opacity: 0.14;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.32'/%3E%3C/svg%3E");
   mix-blend-mode: soft-light;
 }
 
@@ -148,7 +126,7 @@ footer {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--primary) 26%, transparent);
+  background: color-mix(in srgb, var(--cipher) 32%, transparent);
 }
 
 :focus-visible {
@@ -156,14 +134,14 @@ footer {
   box-shadow:
     0 0 0 2px var(--background),
     0 0 0 3.5px var(--cipher);
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .eyebrow {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
@@ -198,11 +176,11 @@ footer {
   inset: 0.12em 0;
   border-radius: 999px;
   background:
-    linear-gradient(90deg, color-mix(in srgb, var(--cipher) 32%, transparent), transparent 38%),
+    linear-gradient(90deg, color-mix(in srgb, var(--cipher) 28%, transparent), transparent 38%),
     repeating-linear-gradient(
       90deg,
       color-mix(in srgb, var(--cipher) 62%, var(--surface-2)) 0 10px,
-      color-mix(in srgb, var(--cipher) 20%, var(--surface-2)) 10px 18px
+      color-mix(in srgb, var(--cipher) 18%, var(--surface-2)) 10px 18px
     );
   filter: blur(0.3px);
 }
@@ -211,7 +189,7 @@ footer {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(100deg, transparent 18%, rgba(255, 255, 255, 0.26) 48%, transparent 78%);
+  background: linear-gradient(100deg, transparent 18%, rgba(255, 255, 255, 0.22) 48%, transparent 78%);
   background-size: 220% 100%;
   animation: cipher-sheen 2.8s var(--ease-out) infinite;
 }
@@ -263,25 +241,25 @@ footer {
   }
 }
 
-.hero-redact-loop .redact-value {
+.redact-value {
   animation: redact-reveal 5.4s var(--ease-out) infinite;
 }
 
 @keyframes redact-reveal {
   0%,
-  28% {
-    color: transparent;
-    filter: blur(5px);
+  26% {
+    opacity: 0;
+    filter: blur(6px);
   }
   40%,
   68% {
-    color: var(--foreground);
+    opacity: 1;
     filter: blur(0);
   }
-  82%,
+  84%,
   100% {
-    color: transparent;
-    filter: blur(5px);
+    opacity: 0;
+    filter: blur(6px);
   }
 }
 

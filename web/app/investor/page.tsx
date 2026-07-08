@@ -50,6 +50,8 @@ function InvestorPortal() {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [distributionCount, setDistributionCount] = useState(0n);
   const [latestDistributionClaimed, setLatestDistributionClaimed] = useState(false);
+  const [sharesPaused, setSharesPaused] = useState(false);
+  const [supplyStale, setSupplyStale] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!CONTRACTS_CONFIGURED) {
@@ -62,12 +64,14 @@ function InvestorPortal() {
       const distCount = distributor ? await distributor.distributionCount() : 0n;
       const latestId = distCount > 0n ? distCount - 1n : 0n;
       const isLatestClaimed = distCount > 0n && distributor ? await distributor.paid(latestId, address) : false;
-      const [sh, uh, del, obs, claimed] = await Promise.all([
+      const [sh, uh, del, obs, claimed, paused, stale] = await Promise.all([
         shares.confidentialBalanceOf(address),
         mcUSD.confidentialBalanceOf(address),
         shares.delegates(address),
         shares.observer(address),
         demoFaucet ? demoFaucet.claimed(address) : false,
+        shares.paused(),
+        shares.supplyDisclosureStale(),
       ]);
       setShareHandle(sh);
       setUsdHandle(uh);
@@ -76,6 +80,8 @@ function InvestorPortal() {
       setDemoClaimed(claimed);
       setDistributionCount(distCount);
       setLatestDistributionClaimed(Boolean(isLatestClaimed));
+      setSharesPaused(paused);
+      setSupplyStale(stale);
       setError(null);
     } catch (e) {
       setError(`Could not load registry state: ${errorText(e)}`);
@@ -111,6 +117,11 @@ function InvestorPortal() {
   const [observerAddr, setObserverAddr] = useState("");
   const latestDistributionId =
     distributionCount > 0n ? (distributionCount - 1n).toString() : "No active distribution yet";
+  const claimLockedReason = supplyStale
+    ? "Claims are locked because new shares were issued after the last supply disclosure. The issuer must re-disclose supply."
+    : !sharesPaused
+      ? "Claims are locked while transfers are live. The issuer must pause shares for the record-date claim window."
+      : null;
 
   return (
     <div className="flex flex-col gap-8">
@@ -207,6 +218,7 @@ function InvestorPortal() {
           variant="raised"
         >
           <div className="flex flex-col gap-5">
+            {distributionCount > 0n && claimLockedReason && <Callout tone="info">{claimLockedReason}</Callout>}
             {loading ? (
               <div className="skeleton h-8 w-56 rounded-md" />
             ) : (
@@ -221,7 +233,11 @@ function InvestorPortal() {
             )}
             <Field
               label="Distribution ID"
-              helper={`Latest available: ${latestDistributionId} - unclaim each distribution once`}
+              helper={
+                claimLockedReason
+                  ? `Latest available: ${latestDistributionId} - unavailable until the issuer prepares the claim window`
+                  : `Latest available: ${latestDistributionId} - claim each distribution once`
+              }
             >
               <Input
                 placeholder={latestDistributionId}
@@ -240,7 +256,7 @@ function InvestorPortal() {
             <Button
               variant="ghost"
               size="sm"
-              disabled={!distributor || distributionCount === 0n}
+              disabled={!distributor || distributionCount === 0n || Boolean(claimLockedReason)}
               onClick={() =>
                 run("Dividend claim", async () => {
                   if (!distributor || distributionCount === 0n) {
@@ -254,7 +270,13 @@ function InvestorPortal() {
                 })
               }
             >
-              {latestDistributionClaimed ? "Claim already submitted" : "Claim distribution payout"}
+              {claimLockedReason
+                ? supplyStale
+                  ? "Claim locked - disclose supply"
+                  : "Claim locked - pause record date"
+                : latestDistributionClaimed
+                  ? "Claim already submitted"
+                  : "Claim distribution payout"}
             </Button>
           </div>
         </Card>

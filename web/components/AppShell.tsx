@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, ExternalLink, Moon, Sun, Wallet } from "lucide-react";
+import { Check, ChevronDown, Copy, ExternalLink, Moon, Sun, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -11,10 +11,14 @@ import { useWallet } from "@/lib/wallet";
 import { DeploymentBanner } from "./DeploymentBanner";
 import { Badge, Button, shortAddress } from "./ui";
 
-const TABS = [
-  { href: "/issuer", label: "Issuer" },
+const PRIMARY_TABS = [
+  { href: "/app", label: "Overview" },
   { href: "/investor", label: "Investor" },
+  { href: "/issuer", label: "Issuer" },
   { href: "/governance", label: "Governance" },
+];
+
+const MORE_TABS = [
   { href: "/tender", label: "Buyback" },
   { href: "/vesting", label: "Vesting" },
   { href: "/compliance", label: "Compliance" },
@@ -68,7 +72,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className="font-display text-xl font-semibold tracking-[-0.03em]">Charter</span>
             </Link>
             <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Primary">
-              {TABS.map((tab) => {
+              {PRIMARY_TABS.map((tab) => {
                 const active = pathname.startsWith(tab.href);
                 return (
                   <Link
@@ -128,11 +132,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             )}
           </div>
         </div>
+        <nav className="hidden border-t border-line bg-background/72 lg:block" aria-label="Module navigation">
+          <div className="mx-auto flex h-11 w-full max-w-7xl items-center gap-2 px-4 sm:px-6">
+            <span className="eyebrow mr-2 text-faint">Modules</span>
+            {MORE_TABS.map((tab) => {
+              const active = pathname.startsWith(tab.href);
+              return (
+                <Link
+                  key={tab.href}
+                  href={tab.href}
+                  prefetch={false}
+                  aria-current={active ? "page" : undefined}
+                  className={`rounded-md px-3 py-1.5 text-sm transition-colors duration-200 ${
+                    active ? "bg-cipher/10 text-cipher" : "text-muted hover:bg-surface-2 hover:text-foreground"
+                  }`}
+                >
+                  {tab.label}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
         <nav
           className="flex items-center gap-1 overflow-x-auto border-t border-line px-3 py-2 lg:hidden"
           aria-label="Primary mobile"
         >
-          {TABS.map((tab) => {
+          {PRIMARY_TABS.map((tab) => {
             const active = pathname.startsWith(tab.href);
             return (
               <Link
@@ -148,6 +173,34 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-center gap-1 rounded-md px-3 py-2 text-sm text-muted">
+              More
+              <ChevronDown
+                className="h-3.5 w-3.5 transition-transform group-open:rotate-180"
+                strokeWidth={1.75}
+                aria-hidden="true"
+              />
+            </summary>
+            <div className="mt-1 flex gap-1">
+              {MORE_TABS.map((tab) => {
+                const active = pathname.startsWith(tab.href);
+                return (
+                  <Link
+                    key={tab.href}
+                    href={tab.href}
+                    prefetch={false}
+                    aria-current={active ? "page" : undefined}
+                    className={`whitespace-nowrap rounded-md px-3 py-2 text-sm ${
+                      active ? "bg-surface-2 text-cipher" : "text-muted"
+                    }`}
+                  >
+                    {tab.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </details>
         </nav>
       </header>
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:py-10">

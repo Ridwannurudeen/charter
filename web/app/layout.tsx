@@ -31,6 +31,14 @@ export const metadata: Metadata = {
   title: "Charter - Confidential Equity Cap Table on Ethereum",
   description:
     "Private-company equity as confidential ERC-7984 tokens: encrypted ownership, on-chain dividend waterfalls, hidden-weight shareholder voting, and auditor view keys. Powered by Zama FHE.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.svg",
+  },
 };
 
 export default function RootLayout({

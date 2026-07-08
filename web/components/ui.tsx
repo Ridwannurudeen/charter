@@ -25,11 +25,11 @@ export function Card({
   }[variant];
 
   return (
-    <section className={`rounded-lg border p-5 sm:p-6 ${styles} ${className}`}>
+    <section className={`rounded-lg border p-4 sm:p-5 ${styles} ${className}`}>
       {(title || eyebrow) && (
         <header className="mb-5">
           {eyebrow && <p className="eyebrow mb-2 text-cipher">{eyebrow}</p>}
-          {title && <h2 className="font-display text-xl font-semibold tracking-[-0.02em] text-foreground">{title}</h2>}
+          {title && <h2 className="font-display text-2xl font-semibold tracking-[-0.04em] text-foreground">{title}</h2>}
           {subtitle && <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">{subtitle}</p>}
         </header>
       )}
@@ -117,7 +117,7 @@ export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
     <input
       {...props}
       className={`h-11 w-full rounded-md border border-line bg-background/55 px-3 text-sm text-foreground placeholder:text-faint transition-colors duration-150 focus:border-cipher focus:outline-none ${
-        numeric ? "font-mono tabular" : ""
+        numeric ? "text-right font-mono tabular" : ""
       } ${props.className ?? ""}`}
     />
   );
@@ -140,7 +140,7 @@ export function PageHeader({
     <header className={`flex flex-col gap-5 py-4 sm:py-6 lg:flex-row lg:items-end lg:justify-between ${className}`}>
       <div>
         <p className="eyebrow text-cipher">{eyebrow}</p>
-        <h1 className="mt-3 max-w-4xl font-display text-4xl font-semibold leading-[1.05] tracking-[-0.035em] text-foreground sm:text-5xl">
+        <h1 className="mt-3 max-w-4xl font-display text-5xl font-semibold leading-[0.98] tracking-[-0.055em] text-foreground sm:text-6xl">
           {title}
         </h1>
         <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted">{description}</p>

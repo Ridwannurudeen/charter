@@ -68,6 +68,15 @@ export const DISTRIBUTOR_ABI = [
   "function claim(uint256 id)",
   "function payBatch(uint256 id, address[] investors)",
   "function sweep(address token, address to)",
+  "error DistributorNotIssuer(address caller)",
+  "error DistributorNoRecordSupply()",
+  "error DistributorPoolOverflow()",
+  "error DistributorSharesNotPaused()",
+  "error DistributorStaleSupply()",
+  "error DistributorInvalidToken(address token)",
+  "error DistributorInvalidDistribution(uint256 id)",
+  "error DistributorAlreadyPaid(uint256 id, address investor)",
+  "error DistributorBatchTooLarge(uint256 count)",
 ] as const;
 
 export const RESOLUTIONS_ABI = [
