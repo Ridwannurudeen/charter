@@ -11,5 +11,5 @@
 - [x] Make the GitHub repo public.
 - [x] Add the landing-page GitHub link if the repo is public.
 - [x] Add the final live site URL to `docs/X-THREAD.md`.
-- [ ] Add the demo video URL to `docs/X-THREAD.md`.
+- [x] Add the demo video URL to `docs/X-THREAD.md`.
 - [ ] Paste the final X thread URL into the submission form.

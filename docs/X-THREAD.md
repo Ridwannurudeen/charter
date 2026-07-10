@@ -21,5 +21,5 @@ outcome is revealed after the voting window. Exact totals are never disclosed.
 7/ The stack is built on @zama FHE, OpenZeppelin confidential contracts, and ERC-7984 rails: `ERC7984Rwa`,
 `ERC7984Votes`, holder-appointed observer access, and a module registry for dividends/governance.
 
-8/ Links: site https://charter.gudman.xyz, repo https://github.com/Ridwannurudeen/charter, demo video [video URL]. Built
+8/ Links: site https://charter.gudman.xyz, repo https://github.com/Ridwannurudeen/charter, demo video https://youtu.be/C4BqFngP7rQ. Built
 for #ZamaDeveloperProgram.
