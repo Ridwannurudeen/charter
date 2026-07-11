@@ -128,4 +128,6 @@ transiently authorized module can deliberately persist or disclose that handle. 
 effects after the fact. Review module code before registration and run `@charter/conformance`; a passing suite is
 behavioral evidence for exercised paths, not proof that arbitrary module code is safe.
 
-See the repository's public security self-review for the complete threat model and accepted risks.
+See the repository's
+[public security self-review](https://github.com/Ridwannurudeen/charter/blob/main/docs/SECURITY-REVIEW.md) for the
+complete threat model and accepted risks.

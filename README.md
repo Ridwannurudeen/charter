@@ -28,8 +28,9 @@ keeping quantities encrypted.
 
 ## Known limitations, addressed
 
-A self-review of this project asked six hard questions. Each is answered by a specific, tested, deployed module — not by
-softer language. Full tx evidence is in `docs/E2E-RUN.md`.
+A self-review of this project asked six hard questions. Each is answered by a tested implementation or an explicit scope
+boundary. Evidence for the deployed Phase 0 paths is in `docs/E2E-RUN.md`; local Phase 1 artifacts are linked where
+relevant below.
 
 1. **"A cap table's hard part is legal state (vesting, conversion), and Charter modeled none of it."** `VestingSchedule`
    now implements cliff-and-linear vesting with the standard proportional cliff catch-up, funded by escrow and claimed
@@ -47,9 +48,10 @@ softer language. Full tx evidence is in `docs/E2E-RUN.md`.
    verified on-chain, which no contract can do. (The demo's three guardians share one mnemonic for convenience; a real
    deployment assigns each to an independently-held key.)
 4. **"Charter hides amounts but keeps identity and timing public — maybe the wrong half of the privacy problem."** This
-   is a correct critique of ERC-7984 generally, not something a redesign fixes: identity-privacy needs a fundamentally
-   different primitive (stealth addresses, shielded pools), out of scope here. Charter is precisely an
-   **amount-privacy** primitive — the README no longer implies more than that (see "Design Decisions and Constraints").
+   remains correct for the deployed system. Phase 1 adds an
+   [experimental stealth-address design and local prototype](docs/design/IDENTITY-PRIVACY.md), but it is outside the
+   core package, is not deployed, and does not make existing holders anonymous. Charter remains an **amount-privacy**
+   primitive — the README does not imply more than that (see "Design Decisions and Constraints").
 5. **"The old batch-size benchmark implied a workflow dependency."** Legacy push payouts once had a hard measured
    ceiling under `payBatch` stress. We now remove that user-facing dependency by making distribution collection
    pull-based through `claim()`: any investor can claim independently using the same distribution id.
@@ -162,10 +164,10 @@ checkpointed encrypted voting power; and `ERC7984ObserverAccess` for holder-appo
 The custom code adds the supply disclosure flow, trusted module registry, pro-rata distributor, outcome-only resolution
 modules (v1-v3), a confidential buyback, cliff-vesting, a compliant issuance gate, an M-of-N enforcement guardian, a
 one-time demo share faucet, and testnet mcUSD token. The local FHEVM mock test suite currently covers all of the above:
-**70 tests** across issuance, disclosure, distributions, stale-supply rejection, outcome-only resolutions and quorum,
-shareholder-initiated proposals, observer access, compliance controls, demo faucet claims, the confidential buyback
-(both full-fill and pro-rata-oversubscribed paths), vesting (cliff catch-up, linear release, revocation), gated
-issuance, and the guardian's quorum/timelock/execution flow.
+**91 tests** across issuance, disclosure, distributions, stale-record rejection, outcome-only resolutions and quorum,
+shareholder-initiated proposals, observer access, compliance controls, demo faucet claims, the confidential buyback,
+vesting, gated issuance, guardian enforcement, the experimental stealth adapter, and conformance checks against three
+existing modules.
 
 ## Economic model verdict
 
@@ -192,6 +194,20 @@ npm i
 npx hardhat test
 cd web && npm i && npm run dev
 ```
+
+## For builders
+
+- [`@charter/core`](packages/core/README.md) packages the registry contracts, TypeScript bindings, deploy helper, and
+  normative module-ACL specification.
+- [`@charter/conformance`](packages/conformance/README.md) provides five behavioral checks for a module's ACL boundary,
+  plus a verified leaking negative control.
+- The [standalone consumer](examples/consumer/README.md) installs both local tarballs outside the workspace, deploys its
+  own registry and module, and records the run in [Phase 1 evidence](docs/PHASE1-EVIDENCE.md).
+- The [core security self-review](docs/SECURITY-REVIEW.md) records the internal findings and accepted trust boundaries;
+  it is audit preparation, not an independent audit.
+
+The packages are prepared for `npm pack` but have not been published. The ROADMAP Phase 1 gate remains open until a real
+external team completes the same integration in its own project.
 
 ### Scenario Tasks
 

@@ -3,6 +3,15 @@
   "version": "0.1.0",
   "description": "Confidential ERC-7984 ownership registry with a trusted module ACL",
   "license": "BSD-3-Clause-Clear",
+  "homepage": "https://github.com/Ridwannurudeen/charter/tree/main/packages/core#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ridwannurudeen/charter.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/Ridwannurudeen/charter/issues"
+  },
   "publishConfig": {
     "access": "public"
   },
