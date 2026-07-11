@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-import {CharterShares} from "./CharterShares.sol";
+import {CharterShares} from "@charter/core/contracts/CharterShares.sol";
 
 /// @title VestingSchedule — confidential cliff-and-linear vesting for grants of shares
 /// @notice The lifecycle mechanic every real cap table is built around: shares granted to an

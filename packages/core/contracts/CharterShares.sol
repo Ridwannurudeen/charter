@@ -8,13 +8,8 @@ import {IERC7984} from "@openzeppelin/confidential-contracts/interfaces/IERC7984
 import {ERC7984} from "@openzeppelin/confidential-contracts/token/ERC7984/ERC7984.sol";
 import {ERC7984Rwa} from "@openzeppelin/confidential-contracts/token/ERC7984/extensions/ERC7984Rwa.sol";
 import {ERC7984Votes} from "@openzeppelin/confidential-contracts/token/ERC7984/extensions/ERC7984Votes.sol";
-import {
-    ERC7984ObserverAccess
-} from "@openzeppelin/confidential-contracts/token/ERC7984/extensions/ERC7984ObserverAccess.sol";
-
-interface IModuleFundsRecoverable {
-    function sweep(IERC7984 token, address to) external;
-}
+import {ERC7984ObserverAccess} from "@openzeppelin/confidential-contracts/token/ERC7984/extensions/ERC7984ObserverAccess.sol";
+import {ICharterModule, ICharterModuleFundsRecoverable} from "./interfaces/ICharterModule.sol";
 
 /// @title CharterShares — a confidential share registry for a private company
 /// @notice Company shares as an ERC7984 confidential token. Individual holdings are
@@ -51,6 +46,8 @@ contract CharterShares is ZamaEthereumConfig, ERC7984Rwa, ERC7984ObserverAccess,
     error CharterModuleStillActive(address module);
     error CharterModuleNotActive(address module);
     error CharterModuleZeroAddress();
+    error CharterInvalidModule(address module);
+    error CharterWrongRegistry(address module, address registry);
 
     constructor(
         string memory name_,
@@ -67,6 +64,11 @@ contract CharterShares is ZamaEthereumConfig, ERC7984Rwa, ERC7984ObserverAccess,
     /// @notice Registers or removes a protocol module (distributor, resolutions).
     function setModule(address module, bool enabled) external onlyAdmin {
         require(module != address(0), CharterModuleZeroAddress());
+        if (enabled) {
+            require(module.code.length != 0, CharterInvalidModule(module));
+            address registry = ICharterModule(module).SHARES();
+            require(registry == address(this), CharterWrongRegistry(module, registry));
+        }
         isModule[module] = enabled;
         emit ModuleSet(module, enabled);
     }
@@ -96,11 +98,7 @@ contract CharterShares is ZamaEthereumConfig, ERC7984Rwa, ERC7984ObserverAccess,
         _disableModuleAndRecover(module, tokens, to);
     }
 
-    function _disableModuleAndRecover(
-        address module,
-        IERC7984[] memory tokens,
-        address to
-    ) private {
+    function _disableModuleAndRecover(address module, IERC7984[] memory tokens, address to) private {
         require(isModule[module], CharterModuleNotActive(module));
         require(module != address(0), CharterModuleZeroAddress());
         isModule[module] = false;
@@ -117,7 +115,7 @@ contract CharterShares is ZamaEthereumConfig, ERC7984Rwa, ERC7984ObserverAccess,
         for (uint256 i = 0; i < tokens.length; i++) {
             IERC7984 token = tokens[i];
             require(address(token) != address(0), CharterModuleZeroAddress());
-            IModuleFundsRecoverable(module).sweep(token, to);
+            ICharterModuleFundsRecoverable(module).sweep(token, to);
             emit ModuleFundsRecovered(module, address(token), to);
         }
     }
@@ -171,18 +169,11 @@ contract CharterShares is ZamaEthereumConfig, ERC7984Rwa, ERC7984ObserverAccess,
         return isModule[msg.sender];
     }
 
-    function confidentialTotalSupply()
-        public
-        view
-        override(IERC7984, ERC7984, ERC7984Votes)
-        returns (euint64)
-    {
+    function confidentialTotalSupply() public view override(IERC7984, ERC7984, ERC7984Votes) returns (euint64) {
         return super.confidentialTotalSupply();
     }
 
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view override(ERC7984, ERC7984Rwa) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override(ERC7984, ERC7984Rwa) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 

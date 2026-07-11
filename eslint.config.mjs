@@ -6,18 +6,18 @@ import globals from "globals";
 export default tseslint.config(
   {
     ignores: [
-      "fhevmTemp/**",
-      "tmp/**",
-      ".coverage_artifacts/**",
-      ".coverage_cache/**",
-      ".coverage_contracts/**",
-      "artifacts/**",
-      "build/**",
-      "cache/**",
-      "coverage/**",
-      "dist/**",
-      "node_modules/**",
-      "types/**",
+      "**/fhevmTemp/**",
+      "**/tmp/**",
+      "**/.coverage_artifacts/**",
+      "**/.coverage_cache/**",
+      "**/.coverage_contracts/**",
+      "**/artifacts/**",
+      "**/build/**",
+      "**/cache/**",
+      "**/coverage/**",
+      "**/dist/**",
+      "**/node_modules/**",
+      "**/types/**",
       "web/**",
       "*.env",
       "*.log",
@@ -39,7 +39,7 @@ export default tseslint.config(
     files: ["**/*.ts"],
     languageOptions: {
       parserOptions: {
-        project: "./tsconfig.json",
+        project: ["./tsconfig.json", "./packages/*/tsconfig.eslint.json"],
       },
     },
     rules: {

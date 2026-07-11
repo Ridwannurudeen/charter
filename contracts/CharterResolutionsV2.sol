@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import {FHE, ebool, euint64, externalEbool} from "@fhevm/solidity/lib/FHE.sol";
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-import {CharterShares} from "./CharterShares.sol";
+import {CharterShares} from "@charter/core/contracts/CharterShares.sol";
 
 /// @title CharterResolutionsV2 — shareholder resolutions with a participation quorum
 /// @notice A drop-in replacement for the original CharterResolutions module, registered live

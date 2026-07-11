@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import {FHE, ebool, euint64, externalEbool} from "@fhevm/solidity/lib/FHE.sol";
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-import {CharterShares} from "./CharterShares.sol";
+import {CharterShares} from "@charter/core/contracts/CharterShares.sol";
 
 /// @title CharterResolutions — shareholder resolutions with hidden vote weights
 /// @notice Shareholders vote on resolutions with power equal to their checkpointed

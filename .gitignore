@@ -22,6 +22,7 @@ tmp
 # files
 *.env
 *.log
+*.tgz
 # internal handoff/brief docs — never publish to the public repo
 HANDOFF*.md
 .DS_Store

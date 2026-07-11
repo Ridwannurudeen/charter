@@ -5,7 +5,7 @@ import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {IERC7984} from "@openzeppelin/confidential-contracts/interfaces/IERC7984.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {CharterShares} from "./CharterShares.sol";
+import {CharterShares} from "@charter/core/contracts/CharterShares.sol";
 
 /// @title DividendDistributor — pro-rata distributions over encrypted holdings
 /// @notice The issuer declares a distribution with a public pool amount in any ERC7984

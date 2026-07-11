@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "."
+  },
+  "exclude": ["artifacts", "cache", "dist", "node_modules", "test"],
+  "files": [],
+  "include": [
+    "src/**/*.ts",
+    "types/common.ts",
+    "types/contracts/CharterShares.ts",
+    "types/contracts/interfaces/ICharterModule.sol/**/*.ts",
+    "types/factories/contracts/CharterShares__factory.ts",
+    "types/factories/contracts/interfaces/ICharterModule.sol/**/*.ts"
+  ]
+}
