@@ -58,9 +58,10 @@ Being a hackathon winner and being a dependency are different standards. This ph
   confidential payroll paying into Charter vesting grants; a confidential fund running distributions through Charter's
   dividend module; hidden-weight voting offered to any ERC-7984 token via a thin adapter. Each proven with on-chain
   evidence in the E2E style this repo already uses, not partnership announcements.
-- **The Charter Standard**: draft and publish an ERC for the confidential-module ACL pattern (working title:
-  "Confidential Module Extensions for ERC-7984"), with Zama and OpenZeppelin confidential-contracts maintainers invited
-  as co-authors. If the pattern is good, standardize it before someone standardizes a worse one.
+- **The Charter Standard**: the [in-repository ERC draft](docs/erc/confidential-module-extensions.md) specifies the
+  confidential-module ACL pattern; publication and outside co-authorship remain open, with Zama and OpenZeppelin
+  confidential-contracts maintainers to be invited. If the pattern is good, standardize it before someone standardizes a
+  worse one.
 - **Real-org pilot**: one real private company (or DAO treasury, or angel syndicate) runs a real cap-table event — a
   funding round's share issuance, a vesting schedule, one governed vote — on testnet with real participants and a signed
   writeup. Not real money yet; real _process_.
