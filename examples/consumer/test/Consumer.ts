@@ -1,6 +1,6 @@
-import { deployCharterRegistry } from "@charter/core";
-import type { CharterShares } from "@charter/core";
-import { describeCharterModuleConformance, type CharterModuleConformanceFixture } from "@charter/conformance";
+import { deployCharterRegistry } from "@gudman/charter-core";
+import type { CharterShares } from "@gudman/charter-core";
+import { describeCharterModuleConformance, type CharterModuleConformanceFixture } from "@gudman/charter-conformance";
 import { expect } from "chai";
 import type { ContractTransactionResponse } from "ethers";
 import { Contract } from "ethers";

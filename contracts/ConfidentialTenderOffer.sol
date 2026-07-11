@@ -5,7 +5,7 @@ import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC7984} from "@openzeppelin/confidential-contracts/interfaces/IERC7984.sol";
-import {CharterShares} from "@charter/core/contracts/CharterShares.sol";
+import {CharterShares} from "@gudman/charter-core/contracts/CharterShares.sol";
 
 /// @title ConfidentialTenderOffer — a confidential share buyback module
 /// @notice A registered CharterShares module that runs a sealed tender offer (share buyback): the

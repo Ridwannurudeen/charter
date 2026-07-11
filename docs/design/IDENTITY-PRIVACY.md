@@ -1,7 +1,7 @@
 # Identity Privacy for Charter
 
 Status: design specification for an experimental Phase 1 prototype. Nothing in this document is deployed, audited, or
-part of `@charter/core`.
+part of `@gudman/charter-core`.
 
 ## Decision
 
@@ -86,7 +86,8 @@ recipient-side derivation tests.
 
 ## Minimal atomic adapter
 
-The experimental contract should live outside `@charter/core`, under `contracts/experimental/`. Its intended surface is:
+The experimental contract should live outside `@gudman/charter-core`, under `contracts/experimental/`. Its intended
+surface is:
 
 ```solidity
 interface IERC5564Announcer {
@@ -234,7 +235,7 @@ This design does not:
 - make existing Charter holders private retroactively;
 - change ERC-7984 events, balances, operators, observers, voting, or RWA controls;
 - replace the legal holder directory or claim that an on-chain address proves ownership under securities law;
-- belong in `@charter/core` or imply production readiness.
+- belong in `@gudman/charter-core` or imply production readiness.
 
 The prototype is successful if it proves that a correctly derived one-time address can receive and decrypt encrypted
 Charter shares through an atomic standard announcement flow. It is not successful merely because a random new address

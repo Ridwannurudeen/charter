@@ -198,10 +198,10 @@ cd web && npm i && npm run dev
 
 ## For builders
 
-- [`@charter/core`](packages/core/README.md) packages the registry contracts, TypeScript bindings, deploy helper, and
-  normative module-ACL specification.
-- [`@charter/conformance`](packages/conformance/README.md) provides five behavioral checks for a module's ACL boundary,
-  plus a verified leaking negative control.
+- [`@gudman/charter-core`](packages/core/README.md) packages the registry contracts, TypeScript bindings, deploy helper,
+  and normative module-ACL specification.
+- [`@gudman/charter-conformance`](packages/conformance/README.md) provides five behavioral checks for a module's ACL
+  boundary, plus a verified leaking negative control.
 - The [in-repository confidential-module ERC draft](docs/erc/confidential-module-extensions.md) is the standards-track
   form of that ACL specification. It has not been submitted or assigned an ERC number.
 - The [standalone consumer](examples/consumer/README.md) installs both local tarballs outside the workspace, deploys its

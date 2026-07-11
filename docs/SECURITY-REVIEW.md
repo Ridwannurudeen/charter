@@ -7,13 +7,14 @@ Review date: 2026-07-11
 
 ## Scope and baseline
 
-The strict review scope is the Phase 1 `@charter/core` registry and its module boundary:
+The strict review scope is the Phase 1 `@gudman/charter-core` registry and its module boundary:
 
 - [`CharterShares.sol`](../packages/core/contracts/CharterShares.sol)
 - [`ICharterModule.sol`](../packages/core/contracts/interfaces/ICharterModule.sol)
 - the inherited ERC-7984 RWA, voting, observer, and handle-access behavior used by the registry
-- the module obligations documented in the [`@charter/core` README](../packages/core/README.md)
-- the behavioral checks and stated limits in the [`@charter/conformance` README](../packages/conformance/README.md)
+- the module obligations documented in the [`@gudman/charter-core` README](../packages/core/README.md)
+- the behavioral checks and stated limits in the
+  [`@gudman/charter-conformance` README](../packages/conformance/README.md)
 
 Two application contracts were checked only where they touch the core boundary:
 
@@ -29,7 +30,7 @@ Version baseline:
 
 | Component                              | Reviewed version/configuration                    |
 | -------------------------------------- | ------------------------------------------------- |
-| `@charter/core`                        | `0.1.0`                                           |
+| `@gudman/charter-core`                 | `0.1.0`                                           |
 | Solidity                               | `0.8.27`, Cancun, optimizer enabled with 800 runs |
 | `@fhevm/solidity`                      | `0.11.1`                                          |
 | `@openzeppelin/confidential-contracts` | `0.5.1`                                           |
@@ -122,9 +123,10 @@ decision, not sandboxing.
 
 **Accepted-risk rationale and verification.** Restricting every valid module computation in the registry would require
 application-specific policy and would defeat the generic module boundary. The normative core specification instead
-forbids persistence, forwarding, and disclosure of source handles. `@charter/conformance` observes those behaviors for
-one supplied action and two supplied handles and proves its negative control is detected. It does not cover untested
-functions, branches, handles, recipients, upgrades, or networks. Source review and an independent audit remain required.
+forbids persistence, forwarding, and disclosure of source handles. `@gudman/charter-conformance` observes those
+behaviors for one supplied action and two supplied handles and proves its negative control is detected. It does not
+cover untested functions, branches, handles, recipients, upgrades, or networks. Source review and an independent audit
+remain required.
 
 ### C-04: module removal is not complete revocation
 

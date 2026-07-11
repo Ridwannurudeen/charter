@@ -1,7 +1,7 @@
 # Standalone Charter consumer
 
 This is a deliberately independent Hardhat project. It is outside the repository's npm workspaces and depends on the
-packed `@charter/core` and `@charter/conformance` tarballs, not their workspace source directories.
+packed `@gudman/charter-core` and `@gudman/charter-conformance` tarballs, not their workspace source directories.
 
 The example deploys its own `CharterShares` registry on the local FHEVM mock, mints encrypted balances for two holders,
 registers a custom `BalanceAttestationModule`, verifies its private derived attestation, and runs all five conformance

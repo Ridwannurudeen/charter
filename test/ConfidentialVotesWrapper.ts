@@ -109,7 +109,7 @@ describe("ConfidentialVotesWrapper", function () {
   it("runs an outcome-only vote over wrapped units from a plain ERC-7984 token", async function () {
     // CharterResolutionsV3 is coupled to the concrete CharterShares registry and its admin/agent
     // authorization API. This standalone path uses the narrower votes-source interface in
-    // ConfidentialVotesResolution instead of changing the deployed V3 source or @charter/core.
+    // ConfidentialVotesResolution instead of changing the deployed V3 source or @gudman/charter-core.
     const resolutionFactory = await ethers.getContractFactory("ConfidentialVotesResolution");
     const resolution = (await resolutionFactory.deploy(wrapperAddress, 3)) as unknown as ConfidentialVotesResolution;
     const resolutionAddress = await resolution.getAddress();

@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import {FHE, ebool, euint64, externalEbool} from "@fhevm/solidity/lib/FHE.sol";
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-import {CharterShares} from "@charter/core/contracts/CharterShares.sol";
+import {CharterShares} from "@gudman/charter-core/contracts/CharterShares.sol";
 
 /// @title CharterResolutionsV3 â€” shareholder-proposed resolutions
 /// @notice The third governance module in Charter's live-upgraded lineage (v1 -> v2 -> v3), each

@@ -1,5 +1,5 @@
 {
-  "name": "@charter/conformance",
+  "name": "@gudman/charter-conformance",
   "version": "0.1.0",
   "description": "Hardhat conformance checks for Charter module ACL boundaries",
   "license": "BSD-3-Clause-Clear",
@@ -26,9 +26,9 @@
     "clean": "rimraf artifacts cache dist types",
     "compile": "hardhat compile",
     "build:ts": "tsc --project tsconfig.json",
-    "prebuild": "npm run build --workspace @charter/core",
+    "prebuild": "npm run build --workspace @gudman/charter-core",
     "build": "npm run compile && npm run build:ts",
-    "pretest": "npm run build --workspace @charter/core",
+    "pretest": "npm run build --workspace @gudman/charter-core",
     "test": "npm run compile && hardhat test --no-compile test/positive.ts && node scripts/verify-broken-suite.mjs",
     "test:positive": "hardhat test test/positive.ts",
     "test:broken": "hardhat test test/broken.ts",
@@ -36,7 +36,7 @@
     "prepack": "npm run clean && npm run build"
   },
   "dependencies": {
-    "@charter/core": "0.1.0"
+    "@gudman/charter-core": "0.1.0"
   },
   "peerDependencies": {
     "@fhevm/hardhat-plugin": "^0.4.2",

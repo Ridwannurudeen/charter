@@ -1,7 +1,7 @@
 import { FhevmType } from "@fhevm/hardhat-plugin";
 import { impersonateAccount, setBalance, stopImpersonatingAccount } from "@nomicfoundation/hardhat-network-helpers";
 import "@nomicfoundation/hardhat-chai-matchers/types";
-import type { CharterShares } from "@charter/core";
+import type { CharterShares } from "@gudman/charter-core";
 import { expect } from "chai";
 import type { Log, Signer, TransactionReceipt } from "ethers";
 import { Contract } from "ethers";

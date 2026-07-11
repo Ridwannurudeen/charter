@@ -1,11 +1,11 @@
-# `@charter/conformance`
+# `@gudman/charter-conformance`
 
 Hardhat/Mocha checks for the encrypted-handle boundary between a Charter registry and one installed module.
 
 ## Install
 
 ```bash
-npm install --save-dev @charter/conformance @fhevm/hardhat-plugin @nomicfoundation/hardhat-chai-matchers @nomicfoundation/hardhat-ethers @nomicfoundation/hardhat-network-helpers hardhat
+npm install --save-dev @gudman/charter-conformance @fhevm/hardhat-plugin @nomicfoundation/hardhat-chai-matchers @nomicfoundation/hardhat-ethers @nomicfoundation/hardhat-network-helpers hardhat
 ```
 
 Import the FHEVM, ethers, and Chai matcher plugins in the consumer's Hardhat config. Run this suite on the Hardhat FHEVM
@@ -18,7 +18,7 @@ module, initialized balances for two different holders, and one successful modul
 `euint64` handle consumed by that action. `otherHolderHandle` is the second holder's balance handle.
 
 ```ts
-import { describeCharterModuleConformance } from "@charter/conformance";
+import { describeCharterModuleConformance } from "@gudman/charter-conformance";
 
 describeCharterModuleConformance("MyModule", async () => {
   // Deploy a fresh registry and module, mint to holder and otherHolder,

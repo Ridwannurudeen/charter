@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {CharterShares} from "@charter/core/contracts/CharterShares.sol";
+import {CharterShares} from "@gudman/charter-core/contracts/CharterShares.sol";
 import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 

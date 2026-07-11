@@ -292,8 +292,8 @@ backend. Source review and an independent security assessment remain required fo
 
 ## Reference Implementation
 
-The local reference implementation is pinned to `@charter/core` 0.1.0, `@openzeppelin/confidential-contracts` 0.5.1, and
-`@fhevm/solidity` 0.11.1:
+The local reference implementation is pinned to `@gudman/charter-core` 0.1.0, `@openzeppelin/confidential-contracts`
+0.5.1, and `@fhevm/solidity` 0.11.1:
 
 - [`CharterShares.sol`](../../packages/core/contracts/CharterShares.sol) implements the host registry, balance grant,
   and handle validation. Public repository URL:
@@ -301,10 +301,11 @@ The local reference implementation is pinned to `@charter/core` 0.1.0, `@openzep
 - [`ICharterModule.sol`](../../packages/core/contracts/interfaces/ICharterModule.sol) defines module identity and the
   optional recovery surface. Public repository URL:
   <https://github.com/Ridwannurudeen/charter/blob/main/packages/core/contracts/interfaces/ICharterModule.sol>.
-- [`@charter/core` documentation](../../packages/core/README.md) contains the matching normative module obligations.
-  Public repository URL: <https://github.com/Ridwannurudeen/charter/tree/main/packages/core>.
-- [`@charter/conformance`](../../packages/conformance/README.md) implements the behavioral test cases and intentional
-  negative control. Public repository URL: <https://github.com/Ridwannurudeen/charter/tree/main/packages/conformance>.
+- [`@gudman/charter-core` documentation](../../packages/core/README.md) contains the matching normative module
+  obligations. Public repository URL: <https://github.com/Ridwannurudeen/charter/tree/main/packages/core>.
+- [`@gudman/charter-conformance`](../../packages/conformance/README.md) implements the behavioral test cases and
+  intentional negative control. Public repository URL:
+  <https://github.com/Ridwannurudeen/charter/tree/main/packages/conformance>.
 - The [`security self-review`](../SECURITY-REVIEW.md) records the accepted ACL, removal, swap, and recovery risks. It is
   internal audit preparation, not an independent audit.
 

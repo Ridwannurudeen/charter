@@ -8,15 +8,15 @@ package was published and no contract was deployed to a public network.
 
 ## Status
 
-| Deliverable                | Evidence                                                                                  | Status                           |
-| -------------------------- | ----------------------------------------------------------------------------------------- | -------------------------------- |
-| Core dependency            | [`@charter/core`](../packages/core/README.md), deploy helper, contracts, artifacts, types | Packed and tested locally        |
-| Module conformance         | [`@charter/conformance`](../packages/conformance/README.md), positive and negative suites | Packed and tested locally        |
-| Security review            | [Public self-review](SECURITY-REVIEW.md) with ten findings                                | Internal audit preparation       |
-| Identity privacy           | [Design](design/IDENTITY-PRIVACY.md) and experimental local adapter                       | Local prototype only             |
-| Independent consumer       | [`examples/consumer`](../examples/consumer/README.md)                                     | Tarball-only path passes locally |
-| Real external-team gate    | A project not written by this repository's authors                                        | Open                             |
-| Independent external audit | Review by a separate security team                                                        | Open                             |
+| Deliverable                | Evidence                                                                                         | Status                           |
+| -------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------- |
+| Core dependency            | [`@gudman/charter-core`](../packages/core/README.md), deploy helper, contracts, artifacts, types | Packed and tested locally        |
+| Module conformance         | [`@gudman/charter-conformance`](../packages/conformance/README.md), positive and negative suites | Packed and tested locally        |
+| Security review            | [Public self-review](SECURITY-REVIEW.md) with ten findings                                       | Internal audit preparation       |
+| Identity privacy           | [Design](design/IDENTITY-PRIVACY.md) and experimental local adapter                              | Local prototype only             |
+| Independent consumer       | [`examples/consumer`](../examples/consumer/README.md)                                            | Tarball-only path passes locally |
+| Real external-team gate    | A project not written by this repository's authors                                               | Open                             |
+| Independent external audit | Review by a separate security team                                                               | Open                             |
 
 The local consumer is deliberately not counted as the ROADMAP gate. It proves that the onboarding path works under the
 same repository's control; a real external team must still reproduce it independently.
@@ -49,7 +49,7 @@ npm pack
 Core pack result:
 
 ```text
-@charter/core@0.1.0
+@gudman/charter-core@0.1.0
 charter-core-0.1.0.tgz
 package size: 83.9 kB
 unpacked size: 553.9 kB
@@ -62,7 +62,7 @@ the compiled deploy helper and TypeChain JavaScript, declarations, and source ma
 Conformance pack result:
 
 ```text
-@charter/conformance@0.1.0
+@gudman/charter-conformance@0.1.0
 charter-conformance-0.1.0.tgz
 package size: 7.8 kB
 unpacked size: 29.7 kB
@@ -77,8 +77,8 @@ briefs, signing material, or unrelated application contracts.
 
 ## Independent consumer run
 
-`examples/consumer` is not matched by the root `packages/*` workspace. Its lockfile resolves `@charter/core@0.1.0` and
-`@charter/conformance@0.1.0` from the two generated tarballs.
+`examples/consumer` is not matched by the root `packages/*` workspace. Its lockfile resolves
+`@gudman/charter-core@0.1.0` and `@gudman/charter-conformance@0.1.0` from the two generated tarballs.
 
 The final `npm ci` used an isolated empty npm cache. Both archive SHA-512 values match the lockfile, and the installed
 package manifests match the packed manifests.
@@ -140,7 +140,7 @@ npx hardhat test
 Core workspace:
 
 ```bash
-npm test --workspace @charter/core
+npm test --workspace @gudman/charter-core
 ```
 
 ```text
@@ -151,7 +151,7 @@ deployCharterRegistry
 Conformance workspace:
 
 ```bash
-npm test --workspace @charter/conformance
+npm test --workspace @gudman/charter-conformance
 ```
 
 ```text

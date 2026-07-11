@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-import {CharterShares} from "@charter/core/contracts/CharterShares.sol";
+import {CharterShares} from "@gudman/charter-core/contracts/CharterShares.sol";
 
 /// @title ForceTransferGuardian — M-of-N, timelocked, publicly-reasoned enforcement gate
 /// @notice `ERC7984Rwa.forceConfidentialTransferFrom` is a single-key power: any one agent can

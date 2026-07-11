@@ -1,5 +1,5 @@
 {
-  "name": "@charter/core",
+  "name": "@gudman/charter-core",
   "version": "0.1.0",
   "description": "Confidential ERC-7984 ownership registry with a trusted module ACL",
   "license": "BSD-3-Clause-Clear",

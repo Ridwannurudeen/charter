@@ -1,6 +1,6 @@
-# @charter/core
+# @gudman/charter-core
 
-`@charter/core` is the reusable Charter ownership registry: an ERC-7984 confidential share token, RWA controls,
+`@gudman/charter-core` is the reusable Charter ownership registry: an ERC-7984 confidential share token, RWA controls,
 encrypted voting checkpoints, observer access, verifiable aggregate-supply disclosure, and the trusted module ACL used
 by Charter applications.
 
@@ -12,20 +12,20 @@ helper. Application modules are deliberately outside this package.
 Until the owner approves an npm release, build and install the package tarball locally:
 
 ```bash
-npm pack --workspace @charter/core
+npm pack --workspace @gudman/charter-core
 npm install ./packages/core/charter-core-0.1.0.tgz
 ```
 
 A Solidity consumer imports the registry from the package rather than copying it:
 
 ```solidity
-import { CharterShares } from "@charter/core/contracts/CharterShares.sol";
+import { CharterShares } from "@gudman/charter-core/contracts/CharterShares.sol";
 ```
 
 ## Deploy a registry
 
 ```ts
-import { deployCharterRegistry } from "@charter/core";
+import { deployCharterRegistry } from "@gudman/charter-core";
 import { ethers } from "hardhat";
 
 const [deployer] = await ethers.getSigners();
@@ -125,7 +125,7 @@ The words MUST, MUST NOT, SHOULD, and MAY in this section are normative.
 
 An enabled module can ask the inherited handle manager for persistent access to any handle the registry may use, and a
 transiently authorized module can deliberately persist or disclose that handle. Solidity cannot revoke those FHE ACL
-effects after the fact. Review module code before registration and run `@charter/conformance`; a passing suite is
+effects after the fact. Review module code before registration and run `@gudman/charter-conformance`; a passing suite is
 behavioral evidence for exercised paths, not proof that arbitrary module code is safe.
 
 See the repository's

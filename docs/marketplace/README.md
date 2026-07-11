@@ -13,9 +13,9 @@ in this repository does not count toward either external gate.
 A third-party application module is eligible for review only when its submitted revision:
 
 1. exposes the identity surface and follows every normative MUST and MUST NOT in the
-   [`@charter/core` module ACL specification](../../packages/core/README.md#normative-module-acl-specification);
-2. passes all five checks in [`@charter/conformance`](../../packages/conformance/README.md#checks) against the exact
-   source revision submitted for listing;
+   [`@gudman/charter-core` module ACL specification](../../packages/core/README.md#normative-module-acl-specification);
+2. passes all five checks in [`@gudman/charter-conformance`](../../packages/conformance/README.md#checks) against the
+   exact source revision submitted for listing;
 3. publishes its source, license, compiler and dependency versions, immutable commit identifier, contract path, and
    deployment bytecode or explorer record when a deployment is claimed;
 4. documents every separate authority it needs, including module registration, administrator or agent roles, holder
@@ -37,7 +37,7 @@ Open a pull request that adds one row to [`MODULES.md`](MODULES.md) and includes
 request description or a permanent evidence document in the submitted repository:
 
 - source repository, immutable commit, contract path, contract name, and license;
-- the exact versions of `@charter/core`, `@charter/conformance`, Solidity, `@fhevm/solidity`, and
+- the exact versions of `@gudman/charter-core`, `@gudman/charter-conformance`, Solidity, `@fhevm/solidity`, and
   `@openzeppelin/confidential-contracts` used for the run;
 - the conformance fixture and unedited output showing all five checks passing on the submitted revision;
 - tests for every other security-sensitive function and branch that the single conformance exercise does not cover;

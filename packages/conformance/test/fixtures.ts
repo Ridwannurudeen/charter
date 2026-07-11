@@ -1,4 +1,4 @@
-import { deployCharterRegistry } from "@charter/core";
+import { deployCharterRegistry } from "@gudman/charter-core";
 import type { ContractTransactionResponse } from "ethers";
 import { ethers, fhevm } from "hardhat";
 

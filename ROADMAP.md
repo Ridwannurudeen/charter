@@ -29,10 +29,10 @@ gate blocks the next rather than being narrated past.
 
 Being a hackathon winner and being a dependency are different standards. This phase closes the gap.
 
-- **Extract [`@charter/core`](packages/core/README.md)**: the share registry + module-ACL pattern as an installable
-  package (contracts + TS bindings), so a third party deploys their own CharterShares in minutes instead of forking a
-  repo. The module interface (`setModule`, transient ACL grants, `_validateHandleAllowance`) becomes a documented,
-  versioned spec — the FHE-native equivalent of an ERC hook standard.
+- **Extract [`@gudman/charter-core`](packages/core/README.md)**: the share registry + module-ACL pattern as an
+  installable package (contracts + TS bindings), so a third party deploys their own CharterShares in minutes instead of
+  forking a repo. The module interface (`setModule`, transient ACL grants, `_validateHandleAllowance`) becomes a
+  documented, versioned spec — the FHE-native equivalent of an ERC hook standard.
 - **[Module conformance test-kit](packages/conformance/README.md)**: a package-ready Hardhat suite a module author runs
   against their own module to check its exercised ACL boundaries for handle exfiltration and unauthorized decrypt paths.
   The linked limits state what a pass cannot prove. This is the moat item: the hard part of writing an FHE module is not
@@ -44,8 +44,8 @@ Being a hackathon winner and being a dependency are different standards. This ph
   registration as an _optional_ module, converting the known "hides amounts, not identities" limitation from a
   disclaimer into a roadmap item with a design doc and an
   [experimental local prototype](contracts/experimental/StealthIssuance.sol).
-- **Gate:** one project we did not write deploys its own registry from `@charter/core` and passes the conformance kit.
-  If nobody does even with direct support, the packaging is wrong — stop and fix onboarding before Phase 2. The
+- **Gate:** one project we did not write deploys its own registry from `@gudman/charter-core` and passes the conformance
+  kit. If nobody does even with direct support, the packaging is wrong — stop and fix onboarding before Phase 2. The
   [standalone consumer](examples/consumer/README.md) and its [run evidence](docs/PHASE1-EVIDENCE.md) prove the path
   internally; they do not satisfy this external-team gate.
 
