@@ -187,6 +187,35 @@ describe("Charter", function () {
       const clearSupply = result.clearValues[supplyHandle as `0x${string}`] as bigint;
       await (await shares.finalizeSupplyDisclosure(clearSupply, result.decryptionProof)).wait();
     });
+
+    it("keeps an old disclosure stale when supply changes after the request", async function () {
+      await (await shares.requestSupplyDisclosure()).wait();
+      const requestedAt = await shares.clock();
+      const requestedVersion = await shares.supplyVersion();
+      const supplyHandle = await shares.confidentialTotalSupply();
+      const result = await fhevm.publicDecrypt([supplyHandle]);
+      const clearSupply = result.clearValues[supplyHandle as `0x${string}`] as bigint;
+      let minted = false;
+
+      try {
+        await mintShares(signers.issuer, 1);
+        minted = true;
+        await (await shares.finalizeSupplyDisclosure(clearSupply, result.decryptionProof)).wait();
+
+        expect(await shares.supplyDisclosureStale()).to.eq(true);
+        expect(await shares.supplyVersion()).to.eq(requestedVersion + 1n);
+        expect(await shares.recordTimepoint()).to.eq(requestedAt);
+      } finally {
+        if (minted) {
+          const input = await fhevm.createEncryptedInput(sharesAddress, signers.issuer.address).add64(1).encrypt();
+          await (
+            await shares
+              .connect(signers.issuer)
+              ["confidentialBurn(address,bytes32,bytes)"](signers.issuer.address, input.handles[0], input.inputProof)
+          ).wait();
+        }
+      }
+    });
   });
 
   describe("distributions", function () {
@@ -321,7 +350,10 @@ describe("Charter", function () {
 
     it("cannot pay the same investor twice", async function () {
       await (await shares.pause()).wait();
-      await expect(distributor.payBatch(0, [signers.alice.address])).to.be.revertedWithCustomError(
+      await (await distributor.declare(mcUSDAddress, 1_000n)).wait();
+      const id = (await distributor.distributionCount()) - 1n;
+      await (await distributor.payBatch(id, [signers.alice.address])).wait();
+      await expect(distributor.payBatch(id, [signers.alice.address])).to.be.revertedWithCustomError(
         distributor,
         "DistributorAlreadyPaid",
       );
@@ -351,6 +383,52 @@ describe("Charter", function () {
         "DistributorStaleSupply",
       );
       await (await shares.unpause()).wait();
+    });
+
+    it("rejects payouts when balances change after the distribution record", async function () {
+      await (await shares.pause()).wait();
+      await (await distributor.declare(mcUSDAddress, 1_000n)).wait();
+      const id = (await distributor.distributionCount()) - 1n;
+      const declaredLedgerVersion = await distributor.distributionLedgerVersion(id);
+      let transferred = false;
+
+      try {
+        await (await shares.unpause()).wait();
+        const transfer = await fhevm.createEncryptedInput(sharesAddress, signers.alice.address).add64(1).encrypt();
+        await (
+          await shares
+            .connect(signers.alice)
+            [
+              "confidentialTransfer(address,bytes32,bytes)"
+            ](signers.bob.address, transfer.handles[0], transfer.inputProof)
+        ).wait();
+        transferred = true;
+        await (await shares.pause()).wait();
+
+        expect(await shares.ledgerVersion()).to.eq(declaredLedgerVersion + 1n);
+        await expect(distributor.payBatch(id, [signers.alice.address])).to.be.revertedWithCustomError(
+          distributor,
+          "DistributorStaleLedger",
+        );
+        await expect(distributor.connect(signers.bob).claim(id)).to.be.revertedWithCustomError(
+          distributor,
+          "DistributorStaleLedger",
+        );
+      } finally {
+        if (await shares.paused()) {
+          await (await shares.unpause()).wait();
+        }
+        if (transferred) {
+          const restore = await fhevm.createEncryptedInput(sharesAddress, signers.bob.address).add64(1).encrypt();
+          await (
+            await shares
+              .connect(signers.bob)
+              [
+                "confidentialTransfer(address,bytes32,bytes)"
+              ](signers.alice.address, restore.handles[0], restore.inputProof)
+          ).wait();
+        }
+      }
     });
 
     it("recovers distributor leftovers via shares after disabling the module", async function () {

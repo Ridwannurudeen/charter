@@ -29,11 +29,17 @@ contract CharterShares is ZamaEthereumConfig, ERC7984Rwa, ERC7984ObserverAccess,
 
     /// @notice Total issued shares as last disclosed through the decryption oracle.
     uint64 public totalSharesOnRecord;
-    /// @notice Clock value (block number) at which the record supply was finalized.
+    /// @notice Clock value (block number) captured when the disclosed supply was requested.
     uint48 public recordTimepoint;
+    /// @notice Monotonic mint/burn version used to reject stale supply disclosures.
+    uint256 public supplyVersion;
+    /// @notice Monotonic balance-state version used by record-date modules.
+    uint256 public ledgerVersion;
 
     euint64 private _pendingSupplyHandle;
-    uint48 private _lastSupplyChangeTimepoint;
+    uint256 private _pendingSupplyVersion;
+    uint256 private _recordSupplyVersion;
+    uint48 private _pendingSupplyTimepoint;
 
     event ModuleSet(address indexed module, bool enabled);
     event SupplyDisclosureRequested(euint64 supplyHandle);
@@ -139,6 +145,8 @@ contract CharterShares is ZamaEthereumConfig, ERC7984Rwa, ERC7984ObserverAccess,
         require(FHE.isInitialized(supply), CharterNoSupply());
         FHE.makePubliclyDecryptable(supply);
         _pendingSupplyHandle = supply;
+        _pendingSupplyVersion = supplyVersion;
+        _pendingSupplyTimepoint = clock();
         emit SupplyDisclosureRequested(supply);
     }
 
@@ -153,14 +161,17 @@ contract CharterShares is ZamaEthereumConfig, ERC7984Rwa, ERC7984ObserverAccess,
         FHE.checkSignatures(handles, abi.encode(clearSupply), decryptionProof);
 
         totalSharesOnRecord = clearSupply;
-        recordTimepoint = clock();
+        recordTimepoint = _pendingSupplyTimepoint;
+        _recordSupplyVersion = _pendingSupplyVersion;
         _pendingSupplyHandle = euint64.wrap(0);
+        _pendingSupplyVersion = 0;
+        _pendingSupplyTimepoint = 0;
         emit SupplyDisclosed(clearSupply, recordTimepoint);
     }
 
     /// @notice Returns true when shares were minted or burned after the last supply disclosure.
     function supplyDisclosureStale() public view returns (bool) {
-        return _lastSupplyChangeTimepoint > recordTimepoint;
+        return supplyVersion != _recordSupplyVersion;
     }
 
     /// @dev Registered modules may request access to handles this contract holds ACL
@@ -182,8 +193,9 @@ contract CharterShares is ZamaEthereumConfig, ERC7984Rwa, ERC7984ObserverAccess,
         address to,
         euint64 amount
     ) internal override(ERC7984Rwa, ERC7984ObserverAccess, ERC7984Votes) returns (euint64) {
+        ledgerVersion += 1;
         if (from == address(0) || to == address(0)) {
-            _lastSupplyChangeTimepoint = clock();
+            supplyVersion += 1;
         }
         return super._update(from, to, amount);
     }

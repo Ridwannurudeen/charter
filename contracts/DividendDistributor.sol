@@ -29,6 +29,8 @@ contract DividendDistributor is ZamaEthereumConfig, ReentrancyGuard {
 
     Distribution[] private _distributions;
     mapping(uint256 distributionId => mapping(address investor => bool)) public paid;
+    /// @notice Share-ledger version captured when each distribution record is declared.
+    mapping(uint256 distributionId => uint256 ledgerVersion) public distributionLedgerVersion;
 
     event DistributionDeclared(uint256 indexed id, address indexed token, uint64 pool, uint64 totalShares);
     event BatchPaid(uint256 indexed id, address[] investors);
@@ -40,6 +42,7 @@ contract DividendDistributor is ZamaEthereumConfig, ReentrancyGuard {
     error DistributorPoolOverflow();
     error DistributorSharesNotPaused();
     error DistributorStaleSupply();
+    error DistributorStaleLedger();
     error DistributorInvalidToken(address token);
     error DistributorInvalidDistribution(uint256 id);
     error DistributorAlreadyPaid(uint256 id, address investor);
@@ -87,6 +90,7 @@ contract DividendDistributor is ZamaEthereumConfig, ReentrancyGuard {
         payToken.confidentialTransferFrom(msg.sender, address(this), pool);
 
         id = _distributions.length;
+        distributionLedgerVersion[id] = SHARES.ledgerVersion();
         _distributions.push(
             Distribution({token: address(payToken), pool: poolAmount, totalShares: totalShares, declaredAt: uint48(block.timestamp)})
         );
@@ -98,6 +102,7 @@ contract DividendDistributor is ZamaEthereumConfig, ReentrancyGuard {
     function payBatch(uint256 id, address[] calldata investors) external onlyIssuer nonReentrant {
         require(id < _distributions.length, DistributorInvalidDistribution(id));
         require(!SHARES.supplyDisclosureStale(), DistributorStaleSupply());
+        require(distributionLedgerVersion[id] == SHARES.ledgerVersion(), DistributorStaleLedger());
         Distribution storage d = _distributions[id];
         require(SHARES.paused(), DistributorSharesNotPaused());
         require(investors.length <= MAX_PAY_BATCH, DistributorBatchTooLarge(investors.length));
@@ -123,6 +128,7 @@ contract DividendDistributor is ZamaEthereumConfig, ReentrancyGuard {
     function claim(uint256 id) external nonReentrant {
         require(id < _distributions.length, DistributorInvalidDistribution(id));
         require(!SHARES.supplyDisclosureStale(), DistributorStaleSupply());
+        require(distributionLedgerVersion[id] == SHARES.ledgerVersion(), DistributorStaleLedger());
         Distribution storage d = _distributions[id];
         require(SHARES.paused(), DistributorSharesNotPaused());
         require(!paid[id][msg.sender], DistributorAlreadyPaid(id, msg.sender));
