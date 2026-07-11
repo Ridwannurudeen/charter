@@ -163,7 +163,8 @@ checkpointed encrypted voting power; and `ERC7984ObserverAccess` for holder-appo
 
 The custom code adds the supply disclosure flow, trusted module registry, pro-rata distributor, outcome-only resolution
 modules (v1-v3), a confidential buyback, cliff-vesting, a compliant issuance gate, an M-of-N enforcement guardian, a
-one-time demo share faucet, testnet mcUSD token, and a local-only generic-token voting wrapper. The local FHEVM mock
+one-time demo share faucet, testnet mcUSD token, and a generic-token voting wrapper deployed on Sepolia against that
+open-mint mock. The wrapper's end-to-end vote flow is proven locally, not yet executed on Sepolia. The local FHEVM mock
 test suite currently covers all of the above: **94 tests** across issuance, disclosure, distributions, stale-record
 rejection, outcome-only resolutions and quorum, shareholder-initiated proposals, observer access, compliance controls,
 demo faucet claims, the confidential buyback, vesting, gated issuance, guardian enforcement, the experimental stealth
@@ -205,12 +206,15 @@ cd web && npm i && npm run dev
   form of that ACL specification. It has not been submitted or assigned an ERC number.
 - The [standalone consumer](examples/consumer/README.md) installs both local tarballs outside the workspace, deploys its
   own registry and module, and records the run in [Phase 1 evidence](docs/PHASE1-EVIDENCE.md).
-- The local-only [generic-token voting adapter](contracts/ConfidentialVotesWrapper.sol) escrows one plain ERC-7984 token
-  into non-transferable, checkpointed voting units and uses
-  [a narrow outcome-only resolution contract](contracts/ConfidentialVotesResolution.sol). Deposit and withdrawal
-  addresses and timing remain public; amounts, vote directions, and weights stay encrypted. It is a standalone token
-  wrapper rather than a Charter module, so the module conformance harness does not apply; its integration test instead
-  covers escrow accounting, default-deny handle access, and the full encrypted vote-to-outcome flow.
+- The [generic-token voting adapter](contracts/ConfidentialVotesWrapper.sol) escrows one plain ERC-7984 token into
+  non-transferable, checkpointed voting units and uses
+  [a narrow outcome-only resolution contract](contracts/ConfidentialVotesResolution.sol). The source-verified Sepolia
+  [wrapper](https://sepolia.etherscan.io/address/0xEc3f25b2efd5cA61c4A0206Fce8BC119d647a666#code) and
+  [resolution](https://sepolia.etherscan.io/address/0xaA489e8daAfb7568d34B937dFEcFF6D0D0Ef1c76#code) use the
+  repository's open-mint mcUSD mock, so they prove deployment plumbing, not an external integration or Sybil-resistant
+  governance. Deposit and withdrawal addresses and timing remain public; amounts, vote directions, and weights stay
+  encrypted. The wrapper is not a Charter module, so the module conformance harness does not apply; its integration test
+  covers escrow accounting, default-deny handle access, and the full encrypted vote-to-outcome flow locally.
 - The [module marketplace policy](docs/marketplace/README.md) and [current inventory](docs/marketplace/MODULES.md)
   provide the submission and curation scaffolding. The inventory is first-party only; the required external-module count
   remains 0 of 3.
@@ -242,12 +246,15 @@ external team completes the same integration in its own project.
 Round-two contracts were redeployed on Sepolia on 2026-07-03 and source-verified on both Etherscan and Sourcify (partial
 match). The active distributor was swapped on 2026-07-07 to add pull-based `claim()` payouts without redeploying the
 share token, then rotated again the same day to restore the explicit `payBatch` batch-size guard while keeping
-`claim()`.
+`claim()`. The Phase 2 wrapper and outcome-only resolution were deployed and source-verified on Etherscan on 2026-07-11;
+their Sourcify verification is pending during the v1 API brownout.
 
 | Contract                                          | Address                                      | Etherscan                                                                                        | Sourcify                                                                                                                |
 | ------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
 | `CharterShares`                                   | `0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A` | [verified](https://sepolia.etherscan.io/address/0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xc5Af9E2b3A110D20D914c5771beb5DFBA5F6d61A/) |
 | `MockConfidentialUSD`                             | `0xb6B08dC3014D944231E01Ad5a0292Efeea859112` | [verified](https://sepolia.etherscan.io/address/0xb6B08dC3014D944231E01Ad5a0292Efeea859112#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0xb6B08dC3014D944231E01Ad5a0292Efeea859112/) |
+| `ConfidentialVotesWrapper` (mcUSD adapter)        | `0xEc3f25b2efd5cA61c4A0206Fce8BC119d647a666` | [verified](https://sepolia.etherscan.io/address/0xEc3f25b2efd5cA61c4A0206Fce8BC119d647a666#code) | Verification pending (Sourcify v1 brownout)                                                                             |
+| `ConfidentialVotesResolution` (outcome-only)      | `0xaA489e8daAfb7568d34B937dFEcFF6D0D0Ef1c76` | [verified](https://sepolia.etherscan.io/address/0xaA489e8daAfb7568d34B937dFEcFF6D0D0Ef1c76#code) | Verification pending (Sourcify v1 brownout)                                                                             |
 | `DividendDistributor` (active guarded claim path) | `0xd8562d7609c0E05DdD9ba4653cE90646bf2eB3b4` | [deployed](https://sepolia.etherscan.io/address/0xd8562d7609c0E05DdD9ba4653cE90646bf2eB3b4#code) | Verification pending (Etherscan timeout, Sourcify v1 brownout)                                                          |
 | `DividendDistributor` (previous claim path)       | `0x087966338018456ED2079D3D3d67F7A1B16e40c6` | [deployed](https://sepolia.etherscan.io/address/0x087966338018456ED2079D3D3d67F7A1B16e40c6#code) | Verification pending (Etherscan timeout, Sourcify v1 brownout)                                                          |
 | `DividendDistributor` (legacy payBatch)           | `0x42C8c19fbC1E2F5649d540237759E7bFee5617b9` | [verified](https://sepolia.etherscan.io/address/0x42C8c19fbC1E2F5649d540237759E7bFee5617b9#code) | [partial match](https://repo.sourcify.dev/contracts/partial_match/11155111/0x42C8c19fbC1E2F5649d540237759E7bFee5617b9/) |

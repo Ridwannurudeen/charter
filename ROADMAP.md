@@ -1,8 +1,9 @@
 # Charter Roadmap — from primitive to the ownership layer of the FHE economy
 
-Charter today is a confidential equity-registry primitive: nine verified contracts on Sepolia, 70 passing tests, a live
-self-serve demo, and a module registry that has already survived three live governance swaps (V1→V2→V3) and six bolt-on
-modules without a share-token redeploy. That module registry is the seed of everything below.
+Charter today is a confidential equity-registry primitive: the deployed Phase 0 stack plus two source-verified Phase 2
+voting-adapter contracts on Sepolia, 94 passing tests, a live self-serve demo, and a module registry that has already
+survived three live governance swaps (V1→V2→V3) and six bolt-on modules without a share-token redeploy. That module
+registry is the seed of everything below.
 
 The thesis of this roadmap: **every confidential asset in the Zama ecosystem needs an ownership registry, and none of
 them should have to rebuild one.** Payroll needs vesting and gated issuance. Confidential funds need distributions and
@@ -52,8 +53,9 @@ Being a hackathon winner and being a dependency are different standards. This ph
 
 **Status:** The in-repository [standard draft](docs/erc/confidential-module-extensions.md),
 [generic-token voting adapter](contracts/ConfidentialVotesWrapper.sol), and
-[marketplace scaffolding](docs/marketplace/README.md) are shipped. Phase 1's external-adoption gate and Phase 2's
-external-module and real-organization gates remain open.
+[marketplace scaffolding](docs/marketplace/README.md) are shipped. The adapter is source-verified on Sepolia against the
+repository's open-mint mcUSD mock. Phase 1's external-adoption gate and Phase 2's external-module and real-organization
+gates remain open.
 
 - **[Charter Module Marketplace](docs/marketplace/README.md)**: a curated, conformance-tested registry of third-party
   modules (think: royalty splitters, SAFE-conversion, milestone escrow, secondary-transfer matching). Charter publishes
@@ -62,11 +64,11 @@ external-module and real-organization gates remain open.
   [inventory](docs/marketplace/MODULES.md) contains only first-party references.
 - **Cross-protocol composition proofs**: live integrations with the strongest neighboring Zama-ecosystem projects — a
   confidential payroll paying into Charter vesting grants; a confidential fund running distributions through Charter's
-  dividend module; hidden-weight voting offered to any ERC-7984 token via a thin adapter. The local
+  dividend module; hidden-weight voting offered to any ERC-7984 token via a thin adapter. The source-verified Sepolia
   [wrapper](contracts/ConfidentialVotesWrapper.sol) and
-  [outcome-only adapter](contracts/ConfidentialVotesResolution.sol) are groundwork, not a cross-protocol integration;
-  each future integration still needs on-chain evidence in the E2E style this repo already uses, not a partnership
-  announcement.
+  [outcome-only adapter](contracts/ConfidentialVotesResolution.sol) use this repository's open-mint mock and have not
+  run a public vote flow. They are deployment groundwork, not a cross-protocol integration; each future integration
+  still needs on-chain evidence in the E2E style this repo already uses, not a partnership announcement.
 - **The Charter Standard**: the [in-repository ERC draft](docs/erc/confidential-module-extensions.md) specifies the
   confidential-module ACL pattern; publication and outside co-authorship remain open, with Zama and OpenZeppelin
   confidential-contracts maintainers to be invited. If the pattern is good, standardize it before someone standardizes a
