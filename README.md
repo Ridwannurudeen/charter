@@ -203,6 +203,12 @@ cd web && npm i && npm run dev
   plus a verified leaking negative control.
 - The [standalone consumer](examples/consumer/README.md) installs both local tarballs outside the workspace, deploys its
   own registry and module, and records the run in [Phase 1 evidence](docs/PHASE1-EVIDENCE.md).
+- The local-only [generic-token voting adapter](contracts/ConfidentialVotesWrapper.sol) escrows one plain ERC-7984 token
+  into non-transferable, checkpointed voting units and uses
+  [a narrow outcome-only resolution contract](contracts/ConfidentialVotesResolution.sol). Deposit and withdrawal
+  addresses and timing remain public; amounts, vote directions, and weights stay encrypted. It is a standalone token
+  wrapper rather than a Charter module, so the module conformance harness does not apply; its integration test instead
+  covers escrow accounting, default-deny handle access, and the full encrypted vote-to-outcome flow.
 - The [core security self-review](docs/SECURITY-REVIEW.md) records the internal findings and accepted trust boundaries;
   it is audit preparation, not an independent audit.
 
