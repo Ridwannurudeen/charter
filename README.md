@@ -272,6 +272,11 @@ unmoved share token — the registry is not a one-off trick, it is how this proj
 Charter is not a token cap-table dashboard. It is the privacy-preserving equity registry layer beneath dividends,
 shareholder governance, buybacks, and auditor access.
 
+## Roadmap
+
+Where Charter goes from here — from primitive to the ownership layer of the FHE economy, with explicit phase gates:
+[ROADMAP.md](./ROADMAP.md).
+
 ## Program
 
 Built for the [Zama Developer Program Season 3](https://www.zama.org/programs/developer-program), Builder Track.
