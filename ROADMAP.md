@@ -50,14 +50,23 @@ Being a hackathon winner and being a dependency are different standards. This ph
 
 ## Phase 2 — Become infrastructure other builders choose (3–9 months)
 
-- **Charter Module Marketplace**: a curated, conformance-tested registry of third-party modules (think: royalty
-  splitters, SAFE-conversion, milestone escrow, secondary-transfer matching). Charter publishes the spec and the
-  test-kit; builders publish modules; every new module makes the registry more valuable to the next deployer — the
-  network effect that turns a library into an ecosystem.
+**Status:** The in-repository [standard draft](docs/erc/confidential-module-extensions.md),
+[generic-token voting adapter](contracts/ConfidentialVotesWrapper.sol), and
+[marketplace scaffolding](docs/marketplace/README.md) are shipped. Phase 1's external-adoption gate and Phase 2's
+external-module and real-organization gates remain open.
+
+- **[Charter Module Marketplace](docs/marketplace/README.md)**: a curated, conformance-tested registry of third-party
+  modules (think: royalty splitters, SAFE-conversion, milestone escrow, secondary-transfer matching). Charter publishes
+  the spec and the test-kit; builders publish modules; every new module makes the registry more valuable to the next
+  deployer — the network effect that turns a library into an ecosystem. The current
+  [inventory](docs/marketplace/MODULES.md) contains only first-party references.
 - **Cross-protocol composition proofs**: live integrations with the strongest neighboring Zama-ecosystem projects — a
   confidential payroll paying into Charter vesting grants; a confidential fund running distributions through Charter's
-  dividend module; hidden-weight voting offered to any ERC-7984 token via a thin adapter. Each proven with on-chain
-  evidence in the E2E style this repo already uses, not partnership announcements.
+  dividend module; hidden-weight voting offered to any ERC-7984 token via a thin adapter. The local
+  [wrapper](contracts/ConfidentialVotesWrapper.sol) and
+  [outcome-only adapter](contracts/ConfidentialVotesResolution.sol) are groundwork, not a cross-protocol integration;
+  each future integration still needs on-chain evidence in the E2E style this repo already uses, not a partnership
+  announcement.
 - **The Charter Standard**: the [in-repository ERC draft](docs/erc/confidential-module-extensions.md) specifies the
   confidential-module ACL pattern; publication and outside co-authorship remain open, with Zama and OpenZeppelin
   confidential-contracts maintainers to be invited. If the pattern is good, standardize it before someone standardizes a

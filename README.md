@@ -163,11 +163,11 @@ checkpointed encrypted voting power; and `ERC7984ObserverAccess` for holder-appo
 
 The custom code adds the supply disclosure flow, trusted module registry, pro-rata distributor, outcome-only resolution
 modules (v1-v3), a confidential buyback, cliff-vesting, a compliant issuance gate, an M-of-N enforcement guardian, a
-one-time demo share faucet, and testnet mcUSD token. The local FHEVM mock test suite currently covers all of the above:
-**91 tests** across issuance, disclosure, distributions, stale-record rejection, outcome-only resolutions and quorum,
-shareholder-initiated proposals, observer access, compliance controls, demo faucet claims, the confidential buyback,
-vesting, gated issuance, guardian enforcement, the experimental stealth adapter, and conformance checks against three
-existing modules.
+one-time demo share faucet, testnet mcUSD token, and a local-only generic-token voting wrapper. The local FHEVM mock
+test suite currently covers all of the above: **94 tests** across issuance, disclosure, distributions, stale-record
+rejection, outcome-only resolutions and quorum, shareholder-initiated proposals, observer access, compliance controls,
+demo faucet claims, the confidential buyback, vesting, gated issuance, guardian enforcement, the experimental stealth
+adapter, generic-token voting composition, and conformance checks against three existing modules.
 
 ## Economic model verdict
 
@@ -201,6 +201,8 @@ cd web && npm i && npm run dev
   normative module-ACL specification.
 - [`@charter/conformance`](packages/conformance/README.md) provides five behavioral checks for a module's ACL boundary,
   plus a verified leaking negative control.
+- The [in-repository confidential-module ERC draft](docs/erc/confidential-module-extensions.md) is the standards-track
+  form of that ACL specification. It has not been submitted or assigned an ERC number.
 - The [standalone consumer](examples/consumer/README.md) installs both local tarballs outside the workspace, deploys its
   own registry and module, and records the run in [Phase 1 evidence](docs/PHASE1-EVIDENCE.md).
 - The local-only [generic-token voting adapter](contracts/ConfidentialVotesWrapper.sol) escrows one plain ERC-7984 token
@@ -209,6 +211,9 @@ cd web && npm i && npm run dev
   addresses and timing remain public; amounts, vote directions, and weights stay encrypted. It is a standalone token
   wrapper rather than a Charter module, so the module conformance harness does not apply; its integration test instead
   covers escrow accounting, default-deny handle access, and the full encrypted vote-to-outcome flow.
+- The [module marketplace policy](docs/marketplace/README.md) and [current inventory](docs/marketplace/MODULES.md)
+  provide the submission and curation scaffolding. The inventory is first-party only; the required external-module count
+  remains 0 of 3.
 - The [core security self-review](docs/SECURITY-REVIEW.md) records the internal findings and accepted trust boundaries;
   it is audit preparation, not an independent audit.
 
